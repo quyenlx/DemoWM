@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">DemoWM</string>
+    <string name="tap">Tap</string>
+    <string name="move">Move</string>
+</resources>
