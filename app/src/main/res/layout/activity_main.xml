@@ -12,17 +12,32 @@
         android:layout_height="match_parent" />
 
     <Button
-        android:id="@+id/btnTouch"
+        android:id="@+id/btnMinus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:text="@string/tap" />
+        android:text="@string/minus" />
 
     <Button
-        android:id="@+id/btnMove"
+        android:id="@+id/btnPlus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
-        android:text="@string/move" />
+        android:text="@string/plus" />
+
+    <!--<Button-->
+        <!--android:id="@+id/btnTouch"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:text="@string/tap" />-->
+
+    <!--<Button-->
+        <!--android:id="@+id/btnMove"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:layout_alignParentEnd="true"-->
+        <!--android:text="@string/move" />-->
 </RelativeLayout>

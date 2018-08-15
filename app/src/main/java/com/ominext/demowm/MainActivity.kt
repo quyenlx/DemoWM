@@ -1,17 +1,22 @@
 package com.ominext.demowm
 
 import android.content.res.Configuration
+import android.graphics.Matrix
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.util.TypedValue
+import android.view.DragEvent
+import android.view.View
 import android.widget.RelativeLayout
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
+import com.github.chrisbanes.photoview.OnScaleChangedListener
+import com.github.chrisbanes.photoview.PhotoView
 import com.opentok.android.Connection
 import com.opentok.android.OpentokError
 import com.opentok.android.Session
@@ -20,7 +25,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONException
 import org.json.JSONObject
 
-class MainActivity : AppCompatActivity(), Session.SignalListener, Session.SessionListener {
+class MainActivity : AppCompatActivity(), Session.SignalListener, Session.SessionListener, OnScaleChangedListener{
     override fun onStreamDropped(p0: Session?, p1: Stream?) {
         Log.e(TAG, "onStreamDropped")
     }
@@ -76,17 +81,32 @@ class MainActivity : AppCompatActivity(), Session.SignalListener, Session.Sessio
                     setSignalListener(this@MainActivity)
                 }
 
-        mouseView = MouseView(this, R.color.colorAccent)
-        rootView.addView(mouseView)
+//        mouseView = MouseView(this, R.color.colorAccent)
+//        rootView.addView(mouseView)
+//
+//        btnTouch.setOnClickListener {
+//            mouseView?.setMouseClicked()
+//        }
+//
+//        btnMove.setOnClickListener {
+//            moveMouse(mouseView, 0, 0)
+//        }
 
-        btnTouch.setOnClickListener {
-            mouseView?.setMouseClicked()
+        btnPlus.setOnClickListener {
+            defaultScale += 0.3F
+            if (defaultScale > 2F) return@setOnClickListener
+            photoView.setScale(defaultScale, true)
+        }
+        btnMinus.setOnClickListener {
+            defaultScale -= 0.3F
+            if (defaultScale < 1F) return@setOnClickListener
+            photoView.setScale(defaultScale, true)
         }
 
-        btnMove.setOnClickListener {
-            moveMouse(mouseView, 0, 0)
-        }
+        Log.e(TAG, "${this.resources.displayMetrics.heightPixels}")
     }
+
+    private var defaultScale = 1F
 
     private fun loadImage() {
         Glide.with(this)
@@ -114,7 +134,14 @@ class MainActivity : AppCompatActivity(), Session.SignalListener, Session.Sessio
                     }
                 })
                 .into(photoView)
+        photoView.setOnScaleChangeListener(this)
     }
+
+    override fun onScaleChange(scaleFactor: Float, focusX: Float, focusY: Float) {
+        val location = photoView.getBitmapPositionInsideImageView()!!
+        Log.e(TAG, "Scale = $defaultScale : ${location[0]} -  ${location[1]} - ${location[2]} - ${location[3]}")
+    }
+
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
@@ -179,6 +206,43 @@ class MainActivity : AppCompatActivity(), Session.SignalListener, Session.Sessio
 
     private fun Float.dp2Px(): Int {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, this, resources.displayMetrics).toInt()
+    }
+
+    private fun PhotoView.getBitmapPositionInsideImageView(): IntArray? {
+        val ret = IntArray(4)
+
+        // Get image dimensions
+        // Get image matrix values and place them in an array
+        val f = FloatArray(9)
+        imageMatrix.getValues(f)
+
+        // Extract the scale values using the constants (if aspect ratio maintained, scaleX == scaleY)
+        val scaleX = f[Matrix.MSCALE_X]
+        val scaleY = f[Matrix.MSCALE_Y]
+
+        // Get the drawable (could also get the bitmap behind the drawable and getWidth/getHeight)
+        val origW = drawable.intrinsicWidth
+        val origH = drawable.intrinsicHeight
+
+        // Calculate the actual dimensions
+        val actW = Math.round(origW * scaleX)
+        val actH = Math.round(origH * scaleY)
+
+        ret[2] = actW
+        ret[3] = actH
+
+        // Get image position
+        // We assume that the image is centered into ImageView
+        val imgViewW = width
+        val imgViewH = height
+
+        val top = (imgViewH - actH) / 2
+        val left = (imgViewW - actW) / 2
+
+        ret[0] = left
+        ret[1] = top
+
+        return ret
     }
 
 }
