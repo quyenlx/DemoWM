@@ -140,15 +140,6 @@ public class ViewAnimate extends ImageView {
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams((int) (width * scale), (int) (height * scale));
         params.gravity = Gravity.CENTER;
         ViewAnimate.this.setLayoutParams(params);
-//        ViewAnimate.this.animate()
-//                .scaleY(scale)
-//                .scaleX(scale)
-//                .setStartDelay(0)
-//                .start();
-//        ScaleAnimation scaleAnimation = new ScaleAnimation(1f,2f,1f,2f);
-//        scaleAnimation.setDuration(0);
-//        scaleAnimation.setFillAfter(true);
-//        ViewAnimate.this.startAnimation(scaleAnimation);
         checkDimension(ViewAnimate.this);
     }
 
