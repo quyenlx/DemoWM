@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.ominext.demowm.CustomViewActivity">
+
+    <com.ominext.demowm.widget.dayview.WeekView
+        android:id="@+id/weekView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:dayBackgroundColor="#ffffff"
+        app:eventCornerRadius="1.75dp"
+        app:eventPadding="2.5dp"
+        app:eventTextColor="@android:color/white"
+        app:headerColumnBackground="#ffffffff"
+        app:headerColumnPadding="40dp"
+        app:headerColumnTextColor="#3B3732"
+        app:headerColumnTextColorSaturday="#4991DC"
+        app:headerColumnTextColorSunday="#D11D29"
+        app:headerColumnTextColorTime="#8F8F8F"
+        app:headerRowBackgroundColor="#cccccc"
+        app:headerRowPadding="8dp"
+        app:horizontalFlingEnabled="true"
+        app:hourHeight="80dp"
+        app:hourSeparatorColor="#cccccc"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:noOfVisibleDays="5"
+        app:nowLineColor="#F18D00"
+        app:showDistinctWeekendColor="true"
+        app:showNowLine="true"
+        app:todayBackgroundColor="#20ffff00" />
+
+</android.support.constraint.ConstraintLayout>

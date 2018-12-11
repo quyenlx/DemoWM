@@ -10,6 +10,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:name=".MyApp"
         android:theme="@style/AppTheme">
         <activity
             android:name=".MainActivity"
@@ -46,13 +47,22 @@
             <!-- </intent-filter> -->
         </activity>
         <activity android:name=".ReadStringFromAssetsActivity">
+
+            <!-- <intent-filter> -->
+            <!-- <action android:name="android.intent.action.MAIN" /> -->
+
+
+            <!-- <category android:name="android.intent.category.LAUNCHER" /> -->
+            <!-- </intent-filter> -->
+        </activity>
+        <activity android:name=".ViewAnimationActivity">
             <!--<intent-filter>-->
                 <!--<action android:name="android.intent.action.MAIN" />-->
 
                 <!--<category android:name="android.intent.category.LAUNCHER" />-->
             <!--</intent-filter>-->
         </activity>
-        <activity android:name=".ViewAnimationActivity">
+        <activity android:name=".CustomViewActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
