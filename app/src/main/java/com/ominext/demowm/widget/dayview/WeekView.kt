@@ -849,7 +849,7 @@ class WeekView : View {
                 // Draw the lines for hours.
                 val path = Path()
                 for (hourNumber in 0..23) {
-                    val top = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * hourNumber).toFloat() + mTimeTextHeight / 2 + mHeaderMarginBottom + DISTANCE_FROM_TOP
+                    val top = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * hourNumber).toFloat() + mTimeTextHeight / 2 + mHeaderMarginBottom
                     if (top > mHeaderHeight + mTimeTextHeight / 2 + mHeaderMarginBottom - mHourSeparatorHeight && top < height && startPixel + mWidthPerDay - start > 0) {
                         path.moveTo(start, top)
                         path.lineTo(start + mWidthPerDay, top)
@@ -1021,7 +1021,7 @@ class WeekView : View {
             val isSaturday = day.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
             // Draw the day labels.
             val dayLabel = mDateTimeInterpreter.interpretDate(day)
-            val x = startPixel + (mWidthPerDay / 2)
+            val x = startPixel
             if (!isSaturday && !isSunday && (mHolidays[day] == null || mHolidays[day] == false)) {
                 mHeaderTextPaint.color = mHeaderColumnTextColor
                 if (day.before(today)) {
@@ -1269,7 +1269,8 @@ class WeekView : View {
             if (mCurrentFlingDirection != Direction.NONE && forceFinishScroll()) {
                 goToNearestOrigin()
             } else if (mScroller!!.computeScrollOffset()) {
-                mCurrentOrigin.y = if (mScroller!!.currY.toFloat() == 0F) mScroller!!.currY.toFloat() else mScroller!!.currY.toFloat() - DISTANCE_FROM_TOP// #17434
+                if (mCurrentFlingDirection == Direction.VERTICAL)
+                    mCurrentOrigin.y = if (mScroller!!.currY.toFloat() == 0F) mScroller!!.currY.toFloat() else mScroller!!.currY.toFloat() - DISTANCE_FROM_TOP// #17434
                 mCurrentOrigin.x = mScroller!!.currX.toFloat()
                 ViewCompat.postInvalidateOnAnimation(this)
             }
