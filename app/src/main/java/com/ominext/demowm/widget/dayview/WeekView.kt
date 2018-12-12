@@ -97,12 +97,6 @@ class WeekView : View {
     var mFirstVisibleDay: Calendar? = null
         private set
 
-    /**
-     * The last visible day in the week view.
-     */
-    var mLastVisibleDay: Calendar? = null
-        private set
-
     var mShowFirstDayOfWeekFirst = false
 
     private var mMinimumFlingVelocity = 0
@@ -741,80 +735,64 @@ class WeekView : View {
             mCurrentOrigin.y = height.toFloat() - (mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() - (mHeaderRowPadding * 2).toFloat() - mHeaderMarginBottom - mTimeTextHeight / 2
         }
 
-        // Don't put an "else if" because it will trigger a glitch when completely zoomed out and
-        // scrolling vertically.
         if (mCurrentOrigin.y > 0) {
             mCurrentOrigin.y = 0f
         }
 
         // Consider scroll offset.
-        var leftDaysWithGaps = (-Math.ceil(((if (mCurrentOrigin.x == 0f) mCurrentOrigin.x else mCurrentOrigin.x - 5) / mWidthPerDay).toDouble())).toInt()
+        val leftDaysWithGaps = (-Math.ceil(((if (mCurrentOrigin.x == 0f) mCurrentOrigin.x else mCurrentOrigin.x - 5) / mWidthPerDay).toDouble())).toInt()
 
+        //region Draw Date Display
         if (leftDaysWithGaps < 0) {
             mFirstVisibleDay!!.add(Calendar.DATE, leftDaysWithGaps / 25 - 1)
         } else {
             mFirstVisibleDay!!.add(Calendar.DATE, leftDaysWithGaps / 24)
         }
 
-        if (mFirstVisibleDay!!.before(today)) {
+        when (mFirstVisibleDay?.get(Calendar.DAY_OF_WEEK)) {
+            Calendar.SATURDAY -> mHeaderTextPaint.color = mHeaderSaturdayColumnTextColor
+            Calendar.SUNDAY -> mHeaderTextPaint.color = mHeaderSundayColumnTextColor
+            else -> mHeaderTextPaint.color = mHeaderColumnTextColor
+        }
 
+        if (mFirstVisibleDay!!.before(today)) {
             mHeaderTextPaint.alpha = DAY_PAST_ALPHA
         } else {
             mHeaderTextPaint.alpha = NORMAL_ALPHA
         }
 
+        if (mFirstVisibleDay!!.isTheSameDay(today)) {
+            canvas.drawRect(0F, 0F, mHeaderColumnWidth, height.toFloat(), mTodayBackgroundPaint)
+        }
+
         val text = mDateTimeInterpreter.interpretDate(mFirstVisibleDay!!)
         canvas.drawText(text, mWidthPerDay - 20, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint)
+        //endregion
 
-        val startFromPixel = mCurrentOrigin.x + mWidthPerDay * leftDaysWithGaps +
-                mHeaderColumnWidth - DEFAULT_STROKE_WIDTH
+        val startFromPixel = mCurrentOrigin.x + mWidthPerDay * leftDaysWithGaps + mHeaderColumnWidth - DEFAULT_STROKE_WIDTH
         var startPixel = startFromPixel
+        var day: Calendar
 
-        //Draw events START
+        //region Draw events START
         // Prepare to iterate for each day.
-        var day = today.clone() as Calendar
-        day.add(Calendar.HOUR, 6)
 
         val dashPath = Path()
         for (dayNumber in leftDaysWithGaps + 1..leftDaysWithGaps + mNumberOfVisibleDays + 1) {
 
-            // Check if the day is today.
-            day = today.clone() as Calendar
-            mLastVisibleDay = day.clone() as Calendar
-            day.add(Calendar.DATE, dayNumber - 1)
-            mLastVisibleDay?.add(Calendar.DATE, dayNumber - 2)
-            val sameDay = day.isTheSameDay(today)
-
-            if (mTitleChangeListener != null && dayNumber == leftDaysWithGaps + 2) {
-                mTitleChangeListener?.onTitleChange(day)
-            }
-
             // Draw background color for each day.
             val start = if (startPixel < mHeaderColumnWidth) mHeaderColumnWidth else startPixel
             if (mWidthPerDay + startPixel - start > 0) {
-                if (day.before(today)) {
-                    mDayBackgroundPaint.alpha = PAST_ALPHA
-                    mHourSeparatorPaint.alpha = PAST_ALPHA
-                } else {
-                    mDayBackgroundPaint.alpha = NORMAL_ALPHA
-                    mHourSeparatorPaint.alpha = NORMAL_ALPHA
-                }
-
                 //Draw the line separating days in normal event section: if the day is the first day of week -> draw thick separator else draw dash separator
                 dashPath.moveTo(start, mHeaderHeight + mTimeTextHeight / 2 + mHeaderMarginBottom)
                 dashPath.lineTo(start, height.toFloat())
                 canvas.drawPath(dashPath, mDayBackgroundPaint)
                 dashPath.reset()
-
-                if (sameDay) {
-                    canvas.drawRect(start + DEFAULT_STROKE_WIDTH, mHeaderHeight + mTimeTextHeight / 2 + mHeaderMarginBottom, startPixel + mWidthPerDay - DEFAULT_STROKE_WIDTH, height - DEFAULT_STROKE_WIDTH / 2, mTodayBackgroundPaint)
-                }
             }
 
             // Draw the lines for hours.
             val path = Path()
-            for (hourNumber in 0 until NUMBER_USER_DISPLAY) {
-                val top = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * (hourNumber + 1)).toFloat() + mTimeTextHeight / 2 + mHeaderMarginBottom
+            for (lineHour in 0 until NUMBER_USER_DISPLAY) {
+                val top = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * (lineHour + 1)).toFloat() + mTimeTextHeight / 2 + mHeaderMarginBottom
                 if (top > mHeaderHeight + mTimeTextHeight / 2 + mHeaderMarginBottom - mHourSeparatorHeight && top < height && startPixel + mWidthPerDay - start > 0) {
                     path.moveTo(start, top)
                     path.lineTo(start + mWidthPerDay, top)
@@ -826,10 +804,7 @@ class WeekView : View {
             // In the next iteration, start from the next day.
             startPixel += mWidthPerDay
         }
-        //Draw events END
-
-        //Draw header, time, column START
-        mHeaderBackgroundPaint.alpha = NORMAL_ALPHA
+        //endregion
 
         // Draw the partial of line separating the header (not include all day event) and all-day events
         run {
@@ -858,58 +833,8 @@ class WeekView : View {
             canvas.drawLine(mHeaderColumnWidth - DEFAULT_STROKE_WIDTH, y, width.toFloat(), y, mHeaderBackgroundPaint)
         }
 
-
-        // Draw background for the all-day section.
-        startPixel = startFromPixel
-        for (dayNumber in leftDaysWithGaps + 1..leftDaysWithGaps + mNumberOfVisibleDays + 1) {
-            // Check if the day is today.
-            day = today.clone() as Calendar
-            day.add(Calendar.DATE, dayNumber - 1)
-            //draw line separating days in event all day section: if the day is not first day of week so don't draw
-            if (day.get(Calendar.DAY_OF_WEEK) != mFirstDayOfWeek) {
-                canvas.drawLine(startPixel, mHeaderTextHeight + mHeaderRowPadding * 2, startPixel, height.toFloat(), mHeaderBackgroundPaint)
-            }
-            //draw background all day section if the day is today
-            if (day.isTheSameDay(today)) {
-                canvas.drawRect(startPixel + DEFAULT_STROKE_WIDTH, DEFAULT_STROKE_WIDTH, startPixel + mWidthPerDay - DEFAULT_STROKE_WIDTH, (height - DEFAULT_STROKE_WIDTH), mTodayBackgroundPaint)
-            }
-            startPixel += mWidthPerDay
-        }
-        //Draw header, time, column END
-
-        //region Draws all-day events START
-        startPixel = startFromPixel - BUFFER_DAY * mWidthPerDay
-        leftDaysWithGaps -= BUFFER_DAY
-        run {
-            var dayNumber = leftDaysWithGaps + 1
-            var i = 0
-            while (dayNumber <= leftDaysWithGaps + BUFFER_DAY * 2 + mNumberOfVisibleDays && i < mPositionFilled.size) {
-                mPositionFilled[i] = HashSet()
-                mAllDayEventNumArray[i] = 0
-                mOriginalAllDayEvent[i] = false
-                day = today.clone() as Calendar
-                day.add(Calendar.DATE, dayNumber - 1)
-                dayNumber++
-                i++
-            }
-        }
-
-        run {
-            var dayNumber = leftDaysWithGaps + 1
-            var i = 0
-            while (dayNumber <= leftDaysWithGaps + BUFFER_DAY * 2 + mNumberOfVisibleDays && i < mPositionFilled.size) {
-                day = today.clone() as Calendar
-                day.add(Calendar.DATE, dayNumber - 1)
-                startPixel += mWidthPerDay
-                dayNumber++
-                i++
-            }
-        }
-        //endregion Draws all-day events END
-
         //region Draw the header row texts START
         startPixel = startFromPixel
-        leftDaysWithGaps += BUFFER_DAY
         for (hourNumber in leftDaysWithGaps + 1..leftDaysWithGaps + mNumberOfVisibleDays + 1) {
             // Check if the day is today.
             day = today.clone() as Calendar
@@ -919,7 +844,6 @@ class WeekView : View {
             val hourLabel = mDateTimeInterpreter.interpretTime(hour)
             val x = startPixel
             canvas.drawText(hourLabel, x, mHeaderTextHeight + mHeaderRowPadding, mTimeTextPaint)
-
             startPixel += mWidthPerDay
         }
         //endregion Draw the header row texts START
