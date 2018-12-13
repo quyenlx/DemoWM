@@ -15,12 +15,14 @@ import android.text.TextPaint
 import android.text.TextUtils
 import android.text.format.DateUtils
 import android.util.AttributeSet
+import android.util.Log
 import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.widget.OverScroller
+import android.widget.Toast
 import com.ominext.demowm.R
 import com.ominext.demowm.util.TimeUtils
 import com.ominext.demowm.util.ViewUtils
@@ -492,6 +494,17 @@ class WeekView : View {
             return true
         }
 
+        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+            for (i in listRectBtnCancel) {
+                val rect = i.value
+                if (e.x > rect.left && e.x < rect.right && e.y > rect.top && e.y < rect.bottom) {
+                    Toast.makeText(context,"Clicked! ${i.key}",Toast.LENGTH_SHORT).show()
+                    break
+                }
+            }
+
+            return super.onSingleTapConfirmed(e)
+        }
     }
 
     constructor (context: Context) : this(context, null)
@@ -678,6 +691,8 @@ class WeekView : View {
         mHeaderHeight = mHeaderTextHeight + mHeaderRowPadding * 2 + 0
     }
 
+    private val listRectBtnCancel = mutableMapOf<Int, Rect>()
+
     /**
      * Draws the time column and all the axes/separators.
      *
@@ -704,6 +719,8 @@ class WeekView : View {
                 if (i != 0) {
                     val yDelete = top + 3F.dp2Px()
                     val xDelete = mHeaderColumnWidth - mBitmapDelete?.width!!
+                    val rect = Rect(xDelete.toInt(), yDelete.toInt(), xDelete.toInt() + mBitmapDelete.width, yDelete.toInt() + mBitmapDelete.height)
+                    listRectBtnCancel[i] = rect
                     canvas.drawBitmap(mBitmapDelete, xDelete, yDelete, mPaintAvatar)
                 }
 
