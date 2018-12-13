@@ -478,11 +478,11 @@ class WeekView : View {
             mCurrentFlingDirection = mCurrentScrollDirection
             when (mCurrentFlingDirection) {
                 Direction.LEFT, Direction.RIGHT -> {
-                    mScroller?.fling(mCurrentOrigin.x.toInt(), mCurrentOrigin.y.toInt(), (velocityX * mXScrollingSpeed).toInt(), 0, Integer.MIN_VALUE, Integer.MAX_VALUE, (-((mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() + mHeaderHeight + mHeaderMarginBottom + mTimeTextHeight / 2 - height)).toInt(), 0)
+                    mScroller?.fling(mCurrentOrigin.x.toInt(), mCurrentOrigin.y.toInt(), (velocityX * mXScrollingSpeed).toInt(), 0, Integer.MIN_VALUE, Integer.MAX_VALUE, (-((mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() + mHeaderHeight - height)).toInt(), 0)
                     ViewCompat.postInvalidateOnAnimation(this@WeekView)
                 }
                 Direction.VERTICAL -> if (e1.y > mHeaderHeight) {
-                    mScroller?.fling(mCurrentOrigin.x.toInt(), mCurrentOrigin.y.toInt(), 0, velocityY.toInt(), Integer.MIN_VALUE, Integer.MAX_VALUE, (-((mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() + mHeaderMarginBottom + mTimeTextHeight / 2 - height)).toInt(), 0)
+                    mScroller?.fling(mCurrentOrigin.x.toInt(), mCurrentOrigin.y.toInt(), 0, velocityY.toInt(), Integer.MIN_VALUE, Integer.MAX_VALUE, (-((mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() + mHeaderHeight - height)).toInt(), 0)
                     ViewCompat.postInvalidateOnAnimation(this@WeekView)
                 }
                 else -> {
@@ -701,7 +701,7 @@ class WeekView : View {
 
                 canvas.drawBitmap(mBitmapAvatar, 10F.dp2Px(), top, mPaintAvatar)
 
-                if(i!=0){
+                if (i != 0) {
                     val yDelete = top + 3F.dp2Px()
                     val xDelete = mHeaderColumnWidth - mBitmapDelete?.width!!
                     canvas.drawBitmap(mBitmapDelete, xDelete, yDelete, mPaintAvatar)
@@ -739,8 +739,8 @@ class WeekView : View {
         }
 
         // If the new mCurrentOrigin.y is invalid, make it valid.
-        if (mCurrentOrigin.y < height.toFloat() - (mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() - (mHeaderRowPadding * 2).toFloat() - mHeaderMarginBottom - mTimeTextHeight / 2) {
-            mCurrentOrigin.y = height.toFloat() - (mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() - (mHeaderRowPadding * 2).toFloat() - mHeaderMarginBottom - mTimeTextHeight / 2
+        if (mCurrentOrigin.y < height.toFloat() - (mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() - mHeaderHeight) {
+            mCurrentOrigin.y = height.toFloat() - (mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() - mHeaderHeight
         }
 
         if (mCurrentOrigin.y > 0) {
