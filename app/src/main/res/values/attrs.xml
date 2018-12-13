@@ -37,8 +37,9 @@
         <attr name="textSize" format="dimension" />
         <attr name="textSizeTime" format="dimension" />
         <attr name="eventTextSize" format="dimension" />
-        <attr name="headerColumnPadding" format="dimension" />
+        <attr name="headerColumnWidth" format="dimension" />
         <attr name="headerRowPadding" format="dimension" />
+        <attr name="headerRowHeight" format="dimension" />
         <attr name="headerColumnTextColorTime" format="color" />
         <attr name="headerColumnTextColorSunday" format="color" />
         <attr name="headerColumnTextColorSaturday" format="color" />
