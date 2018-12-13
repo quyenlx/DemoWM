@@ -773,20 +773,29 @@ class WeekView : View {
         var startPixel = startFromPixel
         var day: Calendar
 
-        //region Draw events START
-        // Prepare to iterate for each day.
-
+        //region Draw events + (rows , columns)
         val dashPath = Path()
-        for (dayNumber in leftDaysWithGaps + 1..leftDaysWithGaps + mNumberOfVisibleDays + 1) {
+        for (hourNumber in leftDaysWithGaps + 1..leftDaysWithGaps + mNumberOfVisibleDays + 1) {
+            day = today.clone() as Calendar
+            day.add(Calendar.HOUR_OF_DAY, hourNumber - 1)
+            val hour = day.get(Calendar.HOUR_OF_DAY)
 
             // Draw background color for each day.
             val start = if (startPixel < mHeaderColumnWidth) mHeaderColumnWidth else startPixel
             if (mWidthPerDay + startPixel - start > 0) {
-                //Draw the line separating days in normal event section: if the day is the first day of week -> draw thick separator else draw dash separator
-                dashPath.moveTo(start, mHeaderHeight + mTimeTextHeight / 2 + mHeaderMarginBottom)
-                dashPath.lineTo(start, height.toFloat())
-                canvas.drawPath(dashPath, mDayBackgroundPaint)
-                dashPath.reset()
+                if (hour == 0 && hourNumber != leftDaysWithGaps + 1) {
+                    mDayBackgroundPaint.color = STROKE_HIGHLIGHT_COLOR
+                    mDayBackgroundPaint.strokeWidth = STROKE_HIGHLIGHT_WIDTH
+                    canvas.drawLine(startPixel - DEFAULT_STROKE_WIDTH, mHeaderHeight + mTimeTextHeight / 2 + mHeaderMarginBottom, startPixel - DEFAULT_STROKE_WIDTH, height.toFloat(), mDayBackgroundPaint)
+                    mDayBackgroundPaint.color = mHeaderRowBackgroundColor
+                    mDayBackgroundPaint.strokeWidth = DEFAULT_STROKE_WIDTH
+                } else {
+                    //Draw the line separating days in normal event section: if the day is the first day of week -> draw thick separator else draw dash separator
+                    dashPath.moveTo(start, mHeaderHeight + mTimeTextHeight / 2 + mHeaderMarginBottom)
+                    dashPath.lineTo(start, height.toFloat())
+                    canvas.drawPath(dashPath, mDayBackgroundPaint)
+                    dashPath.reset()
+                }
             }
 
             // Draw the lines for hours.
@@ -800,8 +809,6 @@ class WeekView : View {
                     path.reset()
                 }
             }
-
-            // In the next iteration, start from the next day.
             startPixel += mWidthPerDay
         }
         //endregion
