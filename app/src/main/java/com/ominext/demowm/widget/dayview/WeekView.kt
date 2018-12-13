@@ -8,8 +8,10 @@ import android.graphics.*
 import android.support.v4.view.GestureDetectorCompat
 import android.support.v4.view.ViewCompat
 import android.support.v4.view.animation.FastOutLinearInInterpolator
+import android.support.v7.widget.RecyclerView
 import android.text.TextPaint
 import android.util.AttributeSet
+import android.util.Log
 import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -39,14 +41,13 @@ class WeekView : View {
         const val NUMBER_USER_DISPLAY = 10
     }
 
-    private var BUFFER_DAY = 84 // total = BUFFER_DAY// * 2 + mNumberOfVisibleHours
     private var mContext: Context
     private val mTimeTextPaint: Paint by lazy { Paint(Paint.ANTI_ALIAS_FLAG) }
     private var mTimeTextHeight: Float = 0F
     private val mHeaderTextPaint: Paint by lazy { Paint(Paint.ANTI_ALIAS_FLAG) }
     private var mHeaderTextHeight: Float = 0F
     private var mHeaderRowHeight: Float = 0F
-    private lateinit var mGestureDetector: GestureDetectorCompat
+    lateinit var mGestureDetector: GestureDetectorCompat
     private var mScroller: OverScroller? = null
     private val mCurrentOrigin = PointF(0f, 0f)
     private var mCurrentScrollDirection = Direction.NONE
@@ -275,6 +276,7 @@ class WeekView : View {
         }
     }
     var mScrollStateChangeListener: ScrollStateChangeListener? = null
+    var rvMember: RecyclerView? = null
 
     // Event touch screen
     private val mGestureListener = object : GestureDetector.SimpleOnGestureListener() {
@@ -324,7 +326,8 @@ class WeekView : View {
                 }
                 Direction.VERTICAL -> {
                     if (e1.y > mHeaderRowHeight) {
-                        mCurrentOrigin.y -= distanceY
+                        mCurrentOrigin.y -= distanceY.toInt()
+                        rvMember?.scrollBy(0, distanceY.toInt())
                         ViewCompat.postInvalidateOnAnimation(this@WeekView)
                     }
                 }
@@ -347,11 +350,11 @@ class WeekView : View {
             mCurrentFlingDirection = mCurrentScrollDirection
             when (mCurrentFlingDirection) {
                 Direction.LEFT, Direction.RIGHT -> {
-                    mScroller?.fling(mCurrentOrigin.x.toInt(), mCurrentOrigin.y.toInt(), (velocityX * mXScrollingSpeed).toInt(), 0, Integer.MIN_VALUE, Integer.MAX_VALUE, (-((mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() + mHeaderRowHeight + mHeaderMarginBottom + mTimeTextHeight / 2 - height)).toInt(), 0)
+                    mScroller?.fling(mCurrentOrigin.x.toInt(), mCurrentOrigin.y.toInt(), (velocityX * mXScrollingSpeed).toInt(), 0, Integer.MIN_VALUE, Integer.MAX_VALUE, (-((mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() + mHeaderRowHeight - height)).toInt(), 0)
                     ViewCompat.postInvalidateOnAnimation(this@WeekView)
                 }
                 Direction.VERTICAL -> if (e1.y > mHeaderRowHeight) {
-                    mScroller?.fling(mCurrentOrigin.x.toInt(), mCurrentOrigin.y.toInt(), 0, velocityY.toInt(), Integer.MIN_VALUE, Integer.MAX_VALUE, (-((mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() + mHeaderMarginBottom + mTimeTextHeight / 2 - height)).toInt(), 0)
+                    mScroller?.fling(mCurrentOrigin.x.toInt(), mCurrentOrigin.y.toInt(), 0, velocityY.toInt(), Integer.MIN_VALUE, Integer.MAX_VALUE, (-((mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() + mHeaderRowHeight - height)).toInt(), 0)
                     ViewCompat.postInvalidateOnAnimation(this@WeekView)
                 }
                 else -> {
@@ -489,6 +492,8 @@ class WeekView : View {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         drawHeaderRowAndEvents(canvas)
+
+        drawTimeColumnAndAxes(canvas)
     }
 
     private fun drawHeaderRowAndEvents(canvas: Canvas) {
@@ -500,8 +505,8 @@ class WeekView : View {
         mFirstVisibleDay = today.clone() as Calendar
 
         // If the new mCurrentOrigin.y is invalid, make it valid.
-        if (mCurrentOrigin.y < height.toFloat() - (mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() - (mHeaderRowPadding * 2).toFloat() - mHeaderMarginBottom - mTimeTextHeight / 2) {
-            mCurrentOrigin.y = height.toFloat() - (mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() - (mHeaderRowPadding * 2).toFloat() - mHeaderMarginBottom - mTimeTextHeight / 2
+        if (mCurrentOrigin.y < height.toFloat() - (mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() - mHeaderRowHeight) {
+            mCurrentOrigin.y = height.toFloat() - (mHourHeight * (NUMBER_USER_DISPLAY)).toFloat() - mHeaderRowHeight
         }
 
         if (mCurrentOrigin.y > 0) {
@@ -623,6 +628,22 @@ class WeekView : View {
             startPixel += mWidthPerHour
         }
         //endregion Draw the header row texts START
+    }
+
+    private fun drawTimeColumnAndAxes(canvas: Canvas) {
+        // Draw the background color for the header column.
+        canvas.drawRect(0f, mHeaderRowHeight, mHeaderColumnWidth, height.toFloat(), mHeaderColumnBackgroundPaint)
+
+        // Clip to paint in time column only.
+        canvas.clipRect(0f, mHeaderRowHeight, mHeaderColumnWidth, height.toFloat(), Region.Op.REPLACE)
+
+        for (i in 0 until NUMBER_USER_DISPLAY) {
+            val top = mHeaderRowHeight + mCurrentOrigin.y + (mHourHeight * i).toFloat() + mHeaderMarginBottom + DISTANCE_FROM_TOP
+            val topLine = mHeaderRowHeight + mCurrentOrigin.y + (mHourHeight * (i + 1)).toFloat() + mTimeTextHeight / 2 + mHeaderMarginBottom
+            if (top < height) {
+                canvas.drawLine(0f, topLine, mHeaderColumnWidth, topLine, mTimeTextPaint)
+            }
+        }
     }
 
     /////////////////////////////////////////////////////////////////

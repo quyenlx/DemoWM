@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -31,4 +31,11 @@
         app:showNowLine="true"
         app:todayBackgroundColor="#20ffff00" />
 
-</android.support.constraint.ConstraintLayout>
+    <com.ominext.demowm.widget.dayview.CusRecyclerView
+        android:id="@+id/rvMember"
+        android:layout_width="100dp"
+        android:layout_height="match_parent"
+        android:layout_marginTop="30dp"
+        tools:listitem="@layout/item_day_calendar_member"
+        android:overScrollMode="never" />
+</FrameLayout>
