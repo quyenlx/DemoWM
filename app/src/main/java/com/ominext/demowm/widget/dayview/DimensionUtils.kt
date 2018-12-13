@@ -44,6 +44,6 @@ object DimensionUtils {
 
 }
 
-fun Float.dp2Px(): Int {
-    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, this, Resources.getSystem().displayMetrics).toInt()
+fun Float.dp2Px(): Float {
+    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, this, Resources.getSystem().displayMetrics)
 }

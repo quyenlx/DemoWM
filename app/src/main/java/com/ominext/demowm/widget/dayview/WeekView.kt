@@ -9,17 +9,23 @@ import android.support.v4.util.ArraySet
 import android.support.v4.view.GestureDetectorCompat
 import android.support.v4.view.ViewCompat
 import android.support.v4.view.animation.FastOutLinearInInterpolator
-import android.text.*
+import android.text.TextDirectionHeuristic
+import android.text.TextDirectionHeuristics
+import android.text.TextPaint
+import android.text.TextUtils
 import android.text.format.DateUtils
 import android.util.AttributeSet
 import android.util.TypedValue
-import android.view.*
+import android.view.GestureDetector
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewConfiguration
 import android.widget.OverScroller
 import com.ominext.demowm.R
 import com.ominext.demowm.util.TimeUtils
+import com.ominext.demowm.util.ViewUtils
 import com.ominext.demowm.util.isTheSameDay
 import java.util.*
-import kotlin.collections.ArrayList
 
 class WeekView : View {
 
@@ -57,13 +63,9 @@ class WeekView : View {
     private val mHourSeparatorPaint: Paint by lazy { Paint() }
     private var mHeaderMarginBottom: Float = 0F
     private val mTodayBackgroundPaint: Paint by lazy { Paint() }
-    //    private val mFutureBackgroundPaint: Paint by lazy { Paint() }
-//    private val mFutureWeekendBackgroundPaint: Paint by lazy { Paint() }
-//    private val mPastWeekendBackgroundPaint: Paint by lazy { Paint() }
     private val mNowCirclePaint: Paint by lazy { Paint() }
     private var mNowRadius: Float = 15F
     private val mNowLinePaint: Paint by lazy { Paint() }
-    //    private val mTodayHeaderTextPaint: TextPaint by lazy { TextPaint(Paint.ANTI_ALIAS_FLAG) }
     private val mEventBackgroundPaint: Paint by lazy { Paint() }
 
     /**
@@ -71,20 +73,15 @@ class WeekView : View {
      */
     private var mHeaderColumnWidth: Float = 0F
 
-    //    private var mPreviousPeriodEvents: List<EventSummary>? = null
-//    private var mCurrentPeriodEvents: List<EventSummary>? = null
-    //    private var mNextPeriodEvents: List<EventSummary>? = null
     private val mEventTextPaint: TextPaint by lazy { TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.LINEAR_TEXT_FLAG) }
     private val mHeaderColumnBackgroundPaint: Paint by lazy { Paint() }
     private var mFetchedPeriod = -1 // the middle period the calendar has fetched.
     private var mRefreshEvents = false
     private var mCurrentFlingDirection = Direction.NONE
 
-    //    private val mBitmapCollapse = ViewUtils.getBitmapFromXml(context, R.drawable.ic_arrow_up)
-//    private val mBitmapExpand = ViewUtils.getBitmapFromXml(context, R.drawable.ic_arrow_down)
-    private val mPaintBitmapExpandCollapse = Paint()
-    private val mDestRectBitmapExpandCollapse: Rect = Rect()
-    private val mSrcRectBitmapExpandCollapse: Rect = Rect()
+    private val mBitmapAvatar = ViewUtils.getBitmapFromXml(context, R.mipmap.ic_launcher, 50f.dp2Px().toInt(), 50f.dp2Px().toInt())
+    private val mBitmapDelete = ViewUtils.getBitmapFromXml(context, R.drawable.ic_cancel, 22F.dp2Px().toInt(), 22F.dp2Px().toInt())
+    private val mPaintAvatar = Paint()
 
     private val mAllDayText = "AllDay"
     private val mAllDayTextPaint: TextPaint by lazy { TextPaint(Paint.ANTI_ALIAS_FLAG) }
@@ -694,13 +691,24 @@ class WeekView : View {
         canvas.clipRect(0f, mHeaderHeight, mHeaderColumnWidth, height.toFloat(), Region.Op.REPLACE)
 
         for (i in 0 until NUMBER_USER_DISPLAY) {
-            val top = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * i).toFloat() + mHeaderMarginBottom + DISTANCE_FROM_TOP
+            val top = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * i).toFloat() + 2F.dp2Px()
             val topLine = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * (i + 1)).toFloat() + mTimeTextHeight / 2 + mHeaderMarginBottom
 
             // Draw the text if its y position is not outside of the visible area. The pivot point of the text is the point at the bottom-right corner.
-            val time = mDateTimeInterpreter.interpretTime(i)
             if (top < height) {
-                canvas.drawText(time, mTimeTextWidth + mHeaderColumnPadding, top + mTimeTextHeight, mTimeTextPaint)
+                val yText = top + 60F.dp2Px()
+                val xText = 30F.dp2Px()
+
+                canvas.drawBitmap(mBitmapAvatar, 10F.dp2Px(), top, mPaintAvatar)
+
+                if(i!=0){
+                    val yDelete = top + 3F.dp2Px()
+                    val xDelete = mHeaderColumnWidth - mBitmapDelete?.width!!
+                    canvas.drawBitmap(mBitmapDelete, xDelete, yDelete, mPaintAvatar)
+                }
+
+                canvas.drawText("A$i", xText, yText, mTimeTextPaint)
+
                 canvas.drawLine(0f, topLine, mHeaderColumnWidth, topLine, mTimeTextPaint)
             }
         }
