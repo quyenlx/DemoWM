@@ -11,7 +11,6 @@ import android.support.v4.view.animation.FastOutLinearInInterpolator
 import android.support.v7.widget.RecyclerView
 import android.text.TextPaint
 import android.util.AttributeSet
-import android.util.Log
 import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.MotionEvent

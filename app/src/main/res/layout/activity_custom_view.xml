@@ -17,11 +17,11 @@
         app:headerColumnTextColorSaturday="#4991DC"
         app:headerColumnTextColorSunday="#D11D29"
         app:headerColumnTextColorTime="#8F8F8F"
-        app:headerColumnWidth="100dp"
+        app:headerColumnWidth="120dp"
         app:headerRowBackgroundColor="#cccccc"
         app:headerRowHeight="30dp"
         app:horizontalFlingEnabled="true"
-        app:hourHeight="70dp"
+        app:hourHeight="60dp"
         app:hourSeparatorColor="#cccccc"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -33,7 +33,7 @@
 
     <com.ominext.demowm.widget.dayview.CusRecyclerView
         android:id="@+id/rvMember"
-        android:layout_width="100dp"
+        android:layout_width="120dp"
         android:layout_height="match_parent"
         android:layout_marginTop="30dp"
         tools:listitem="@layout/item_day_calendar_member"
