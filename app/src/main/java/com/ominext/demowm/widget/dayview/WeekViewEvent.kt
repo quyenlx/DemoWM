@@ -7,6 +7,7 @@ import java.util.*
  * Created by Admin on 12/14/2018.
  */
 class WeekViewEvent {
+    constructor()
     constructor(id: Long, name: String?, location: String?, startTime: Calendar?, endTime: Calendar?, allDay: Boolean) {
         this.mId = id
         this.mName = name
@@ -24,31 +25,53 @@ class WeekViewEvent {
     var mColor: Int = 0
     var mAllDay: Boolean = false
 
-    fun splitWeekViewEvents(): List<WeekViewEvent> {
-        //This function splits the WeekViewEvent in WeekViewEvents by day
+    fun splitEvents(): List<WeekViewEvent> {
         val events = ArrayList<WeekViewEvent>()
-        // The first millisecond of the next day is still the same day. (no need to split events for this).
         var endTime = this.mEndTime!!.clone() as Calendar
-        endTime.add(Calendar.MILLISECOND, -1)
-        if (mStartTime!!.isTheSameDay(mEndTime!!)) {
+
+        val eventFirst: WeekViewEvent
+        val otherDay: Calendar
+
+        if (!this.mStartTime!!.isTheSameDay(endTime)) {
             endTime = this.mStartTime!!.clone() as Calendar
             endTime.set(Calendar.HOUR_OF_DAY, 23)
             endTime.set(Calendar.MINUTE, 59)
-            val event1 = WeekViewEvent(this.mId, this.mName, this.mLocation, this.mStartTime, endTime, this.mAllDay)
-            event1.mColor = this.mColor
-            events.add(event1)
+            endTime.set(Calendar.SECOND, 0)
+
+            eventFirst = WeekViewEvent()
+            eventFirst.mId = this.mId
+            eventFirst.mName = this.mName
+            eventFirst.mStartTime = this.mStartTime
+            eventFirst.mEndTime = endTime
+            eventFirst.mAllDay = this.mAllDay
+            eventFirst.mColor = this.mColor
+            events.add(eventFirst)
 
             // Add other days.
-            val otherDay = this.mStartTime!!.clone() as Calendar
+            otherDay = this.mStartTime!!.clone() as Calendar
             otherDay.add(Calendar.DATE, 1)
+
+            var overDay: Calendar
+            var endOfOverDay: Calendar
+            var eventMore: WeekViewEvent
+
             while (!otherDay.isTheSameDay(this.mEndTime!!)) {
-                val overDay = otherDay.clone() as Calendar
+                overDay = otherDay.clone() as Calendar
                 overDay.set(Calendar.HOUR_OF_DAY, 0)
                 overDay.set(Calendar.MINUTE, 0)
-                val endOfOverDay = overDay.clone() as Calendar
+                overDay.set(Calendar.SECOND, 0)
+
+                endOfOverDay = overDay.clone() as Calendar
                 endOfOverDay.set(Calendar.HOUR_OF_DAY, 23)
                 endOfOverDay.set(Calendar.MINUTE, 59)
-                val eventMore = WeekViewEvent(this.mId, this.mName, null, overDay, endOfOverDay, this.mAllDay)
+                endOfOverDay.set(Calendar.SECOND, 0)
+
+                eventMore = WeekViewEvent()
+                eventMore.mId = this.mId
+                eventMore.mName = this.mName
+                eventMore.mStartTime = overDay
+                eventMore.mEndTime = endOfOverDay
+                eventMore.mAllDay = this.mAllDay
                 eventMore.mColor = this.mColor
                 events.add(eventMore)
 
@@ -56,13 +79,21 @@ class WeekViewEvent {
                 otherDay.add(Calendar.DATE, 1)
             }
 
-            // Add last day.
-            val startTime = this.mEndTime!!.clone() as Calendar
-            startTime.set(Calendar.HOUR_OF_DAY, 0)
-            startTime.set(Calendar.MINUTE, 0)
-            val event2 = WeekViewEvent(this.mId, this.mName, mLocation, startTime, this.mEndTime!!, this.mAllDay)
-            event2.mColor = this.mColor
-            events.add(event2)
+            if ((this.mEndTime!!.timeInMillis - this.mEndTime!!.get(Calendar.MILLISECOND)) > this.mStartTime!!.timeInMillis - this.mStartTime!!.get(Calendar.MILLISECOND)) {
+                // Add last day.
+                val startTime = this.mEndTime!!.clone() as Calendar
+                startTime.set(Calendar.HOUR_OF_DAY, 0)
+                startTime.set(Calendar.MINUTE, 0)
+
+                val eventLast = WeekViewEvent()
+                eventLast.mId = this.mId
+                eventLast.mName = this.mName
+                eventLast.mStartTime = this.mStartTime
+                eventLast.mEndTime = this.mEndTime
+                eventLast.mAllDay = this.mAllDay
+                eventLast.mColor = this.mColor
+                events.add(eventLast)
+            }
         } else {
             events.add(this)
         }

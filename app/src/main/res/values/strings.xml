@@ -8,4 +8,5 @@
     <string name="previous">Previous</string>
     <string name="next">Next</string>
     <string name="TIME_FORMAT_WEEK">d日(E)</string>
+    <string name="async_error">Could not download events from the internet</string>
 </resources>

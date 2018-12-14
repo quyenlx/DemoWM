@@ -15,7 +15,6 @@ import android.text.TextPaint
 import android.text.TextUtils
 import android.text.format.DateUtils
 import android.util.AttributeSet
-import android.util.Log
 import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -790,9 +789,26 @@ class WeekView : View {
         canvas.drawText(text, mWidthPerDay - 20, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint)
         //endregion
 
+        // Draw the partial of line separating the header (not include all day event) and all-day events
+        run {
+            val y = mHeaderTextHeight + mHeaderRowPadding * 2 - DEFAULT_STROKE_WIDTH / 2
+            canvas.drawLine(0f, y, mHeaderColumnWidth + DEFAULT_STROKE_WIDTH, y, mAllDayEventSeparatorPaint)
+        }
+
+        run {
+            val x = mHeaderColumnWidth
+            canvas.drawLine(x, 0F, x, height.toFloat(), mHeaderBackgroundPaint)
+        }
+        run {
+            val y = height - DEFAULT_STROKE_WIDTH / 2
+            canvas.drawLine(0F, y, mHeaderColumnWidth, y, mHeaderBackgroundPaint)
+        }
+
         val startFromPixel = mCurrentOrigin.x + mWidthPerDay * leftHoursWithGaps + mHeaderColumnWidth - DEFAULT_STROKE_WIDTH
         var startPixel = startFromPixel
         var day: Calendar
+        // Clip to paint events only.
+        canvas.clipRect(mHeaderColumnWidth, 0F, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
 
         //region Draw events + (rows , columns)
         val dashPath = Path()
@@ -801,10 +817,8 @@ class WeekView : View {
             day.add(Calendar.HOUR_OF_DAY, hourNumber - 1)
             val hour = day.get(Calendar.HOUR_OF_DAY)
 
-            val hourNumberTmp = hourNumber
-
             if (mEventRects == null || mRefreshEvents ||
-                    (hourNumberTmp == leftHoursWithGaps+1 && mFetchedPeriod != mWeekViewLoader?.toWeekViewPeriodIndex(day) &&
+                    (hourNumber == leftHoursWithGaps + 1 && mFetchedPeriod != mWeekViewLoader?.toWeekViewPeriodIndex(day) &&
                             Math.abs(mFetchedPeriod - mWeekViewLoader?.toWeekViewPeriodIndex(day)!!) > 0.5)) {
                 getMoreEvents(day)
                 mRefreshEvents = false
@@ -838,25 +852,12 @@ class WeekView : View {
                     canvas.drawPath(path, mHourSeparatorPaint)
                     path.reset()
                 }
+
+                drawEvent(day, startPixel + mEventSeparatorWidth * 2, canvas, mHeaderHeight + mCurrentOrigin.y + (mHourHeight * lineHour).toFloat())
             }
             startPixel += mWidthPerDay
         }
         //endregion
-
-        // Draw the partial of line separating the header (not include all day event) and all-day events
-        run {
-            val y = mHeaderTextHeight + mHeaderRowPadding * 2 - DEFAULT_STROKE_WIDTH / 2
-            canvas.drawLine(0f, y, mHeaderColumnWidth + DEFAULT_STROKE_WIDTH, y, mAllDayEventSeparatorPaint)
-        }
-
-        run {
-            val x = mHeaderColumnWidth
-            canvas.drawLine(x, 0F, x, height.toFloat(), mHeaderBackgroundPaint)
-        }
-        run {
-            val y = height - DEFAULT_STROKE_WIDTH / 2
-            canvas.drawLine(0F, y, mHeaderColumnWidth, y, mHeaderBackgroundPaint)
-        }
 
         // Clip to paint header row only.
         canvas.clipRect(mHeaderColumnWidth + DEFAULT_STROKE_WIDTH, 0f, width.toFloat(), mHeaderHeight, Region.Op.REPLACE)
@@ -886,6 +887,15 @@ class WeekView : View {
         //endregion Draw the header row texts START
     }
 
+    private fun drawEvent(day: Calendar, startFromPixel: Float, canvas: Canvas, top: Float) {
+        val rectF = RectF()
+        rectF.left = startFromPixel
+        rectF.top = top
+        rectF.right = rectF.left + mWidthPerDay
+        rectF.bottom = rectF.top + mHourHeight / 2
+        canvas.drawRoundRect(rectF, mEventCornerRadius.toFloat(), mEventCornerRadius.toFloat(), mEventBackgroundPaint)
+    }
+
     fun getMoreEvents(day: Calendar) {
         if (mEventRects == null) {
             mEventRects = mutableListOf()
@@ -904,50 +914,157 @@ class WeekView : View {
         if (mWeekViewLoader != null) {
             val periodToFetch = mWeekViewLoader?.toWeekViewPeriodIndex(day) ?: 0
             if (!isInEditMode && (mFetchedPeriod < 0 || mFetchedPeriod != periodToFetch || mRefreshEvents)) {
-                var previousPeriodEvents: List<WeekViewEvent>? = null
                 var currentPeriodEvents: List<WeekViewEvent>? = null
-                var nextPeriodEvents: List<WeekViewEvent>? = null
-
-                if (mPreviousPeriodEvents != null && mCurrentPeriodEvents != null && mNextPeriodEvents != null) {
-
-                    when (periodToFetch) {
-                        mFetchedPeriod - 1 -> {
-                            currentPeriodEvents = mPreviousPeriodEvents
-                            nextPeriodEvents = mCurrentPeriodEvents
-                        }
-                        mFetchedPeriod -> {
-                            previousPeriodEvents = mPreviousPeriodEvents
-                            currentPeriodEvents = mCurrentPeriodEvents
-                            nextPeriodEvents = mNextPeriodEvents
-                        }
-                        mFetchedPeriod + 1 -> {
-                            previousPeriodEvents = mCurrentPeriodEvents
-                            currentPeriodEvents = mNextPeriodEvents
-                        }
-                    }
-                }
 
                 if (currentPeriodEvents == null)
                     currentPeriodEvents = mWeekViewLoader?.onLoad(periodToFetch)
-                if (previousPeriodEvents == null)
-                    previousPeriodEvents = mWeekViewLoader?.onLoad(periodToFetch - 1)
-                if (nextPeriodEvents == null)
-                    nextPeriodEvents = mWeekViewLoader?.onLoad(periodToFetch + 1)
 
                 // Clear events.
                 mEventRects?.clear()
-                sortAndCacheEvents(previousPeriodEvents!!)
                 sortAndCacheEvents(currentPeriodEvents!!)
-                sortAndCacheEvents(nextPeriodEvents!!)
-                calculateHeaderHeight()
 
-                mPreviousPeriodEvents = previousPeriodEvents
                 mCurrentPeriodEvents = currentPeriodEvents
-                mNextPeriodEvents = nextPeriodEvents
                 mFetchedPeriod = periodToFetch
             }
         }
+
+        // Prepare to calculate positions of each events.
+        val tempEvents = mEventRects
+        mEventRects = ArrayList()
+
+        // Iterate through each day with events to calculate the position of the events.
+        while (tempEvents!!.size > 0) {
+            val eventRects = ArrayList<EventRect>(tempEvents.size)
+
+            // Get first event for a day.
+            val eventRect1 = tempEvents.removeAt(0)
+            eventRects.add(eventRect1)
+
+            var i = 0
+            while (i < tempEvents.size) {
+                // Collect all other events for same day.
+                val eventRect2 = tempEvents[i]
+                if (eventRect1.event?.mStartTime!!.isTheSameDay(eventRect2.event?.mStartTime!!)) {
+                    tempEvents.removeAt(i)
+                    eventRects.add(eventRect2)
+                } else {
+                    i++
+                }
+            }
+            computePositionOfEvents(eventRects)
+        }
     }
+
+    /**
+     * Calculates the left and right positions of each events. This comes handy specially if events
+     * are overlapping.
+     *
+     * @param eventRects The events along with their wrapper class.
+     */
+    private fun computePositionOfEvents(eventRects: List<EventRect>) {
+        // Make "collision groups" for all events that collide with others.
+        val collisionGroups = ArrayList<ArrayList<EventRect>>()
+        for (eventRect in eventRects) {
+            var isPlaced = false
+
+            outerLoop@ for (collisionGroup in collisionGroups) {
+                for (groupEvent in collisionGroup) {
+                    if (isEventsCollide(groupEvent.event!!, eventRect.event!!) && groupEvent.event?.mAllDay == eventRect.event?.mAllDay) {
+                        collisionGroup.add(eventRect)
+                        isPlaced = true
+                        break@outerLoop
+                    }
+                }
+            }
+
+            if (!isPlaced) {
+                val newGroup = ArrayList<EventRect>()
+                newGroup.add(eventRect)
+                collisionGroups.add(newGroup)
+            }
+        }
+
+        for (collisionGroup in collisionGroups) {
+            expandEventsToMaxWidth(collisionGroup)
+        }
+    }
+
+    /**
+     * Expands all the events to maximum possible width. The events will try to occupy maximum
+     * space available horizontally.
+     *
+     * @param collisionGroup The group of events which overlap with each other.
+     */
+    private fun expandEventsToMaxWidth(collisionGroup: List<EventRect>) {
+        // Expand the events to maximum possible width.
+        val columns = ArrayList<ArrayList<EventRect>>()
+        columns.add(ArrayList())
+        for (eventRect in collisionGroup) {
+            var isPlaced = false
+            for (column in columns) {
+                if (column.isEmpty()) {
+                    column.add(eventRect)
+                    isPlaced = true
+                } else if (!isEventsCollide(eventRect.event!!, column.last().event!!)) {
+                    column.add(eventRect)
+                    isPlaced = true
+                    break
+                }
+            }
+            if (!isPlaced) {
+                val newColumn = ArrayList<EventRect>()
+                newColumn.add(eventRect)
+                columns.add(newColumn)
+            }
+        }
+
+        // Calculate left and right position for all the events.
+        // Get the maxRowCount by looking in all columns.
+        val maxRowCount = columns
+                .map { it.size }
+                .max()
+                ?: 0
+        for (i in 0 until maxRowCount) {
+            // Set the left and right values of the event.
+            var j = 0f
+            for (column in columns) {
+                if (column.size >= i + 1) {
+                    val eventRect = column[i]
+                    eventRect.height = 1f / columns.size
+                    eventRect.top = j / columns.size
+                    if (!eventRect.event?.mAllDay!!) {
+                        eventRect.left = (eventRect.event?.mStartTime!!.get(Calendar.HOUR_OF_DAY) * 60 + eventRect.event?.mStartTime!!.get(Calendar.MINUTE)).toFloat()
+                        eventRect.right = (eventRect.event?.mEndTime!!.get(Calendar.HOUR_OF_DAY) * 60 + eventRect.event?.mEndTime!!.get(Calendar.MINUTE)).toFloat()
+                        if (eventRect.left == eventRect.right) {
+                            eventRect.left--
+                        }
+                    } else {
+                        eventRect.left = 0f
+                        eventRect.right = mAllDayEventHeight.toFloat()
+                    }
+                    mEventRects?.add(eventRect)
+                }
+                j++
+            }
+        }
+    }
+
+    /**
+     * Checks if two events overlap.
+     *
+     * @param event1 The first event.
+     * @param event2 The second event.
+     * @return true if the events overlap.
+     */
+    private fun isEventsCollide(event1: WeekViewEvent, event2: WeekViewEvent): Boolean {
+        val start1 = event1.mStartTime?.zeroSECONDAndMILLSECOND()
+        val end1 = event1.mEndTime?.zeroSECONDAndMILLSECOND()
+        val start2 = event2.mStartTime?.zeroSECONDAndMILLSECOND()
+        val end2 = event2.mEndTime?.zeroSECONDAndMILLSECOND()
+
+        return !(start1!! >= end2!! || end1!! <= start2!!)
+    }
+
 
     /**
      * Get the time and date where the user clicked on.
@@ -1262,12 +1379,12 @@ class WeekView : View {
      * @param event The event to cache.
      */
     private fun cacheEvent(event: WeekViewEvent) {
-        if (event.mStartTime?.compareTo(event.mEndTime)!! >= 0)
+        if (!event.mAllDay && event.mStartTime!! > event.mEndTime!!)
             return
-        val splitedEvents = event.splitWeekViewEvents()
-        for (splitedEvent in splitedEvents) {
-            mEventRects?.add(EventRect(splitedEvent, event, null))
-        }
+
+        event.splitEvents()
+                .map { EventRect(it, event, null) }
+                .forEach { mEventRects?.add(it) }
     }
 
 
@@ -1276,8 +1393,8 @@ class WeekView : View {
      * @param events The events to be sorted and cached.
      */
     private fun sortAndCacheEvents(events: List<WeekViewEvent>) {
-        sortEvents(events)
-        for (event in events) {
+        val sortedEvents = sortEvents(events)
+        for (event in sortedEvents) {
             cacheEvent(event)
         }
     }
@@ -1286,18 +1403,30 @@ class WeekView : View {
      * Sorts the events in ascending order.
      * @param events The events to be sorted.
      */
-    private fun sortEvents(events: List<WeekViewEvent>) {
-        Collections.sort(events) { event1, event2 ->
-            val start1 = event1.mStartTime?.timeInMillis
-            val start2 = event2.mStartTime?.timeInMillis
-            var comparator = if (start1!! > start2!!) 1 else if (start1 < start2) -1 else 0
-            if (comparator == 0) {
-                val end1 = event1.mEndTime?.timeInMillis
-                val end2 = event2.mEndTime?.timeInMillis
-                comparator = if (end1!! > end2!!) 1 else if (end1 < end2) -1 else 0
+    private fun sortEvents(events: List<WeekViewEvent>): List<WeekViewEvent> {
+        val allDayEventList = ArrayList<WeekViewEvent>()
+        val normalEventList = ArrayList<WeekViewEvent>()
+
+        for (event in events) {
+            if (event.mAllDay) {
+                allDayEventList.add(event)
+            } else {
+                normalEventList.add(event)
             }
-            comparator
         }
+        normalEventList.sortWith(Comparator { event1, event2 ->
+            val start1 = event1.mStartTime!!.timeInMillis
+            val start2 = event2.mStartTime!!.timeInMillis
+            var comparator = if (start1 > start2) 1 else if (start1 < start2) -1 else 0
+            if (comparator == 0) {
+                val end1 = event1.mEndTime!!.timeInMillis
+                val end2 = event2.mEndTime!!.timeInMillis
+                comparator = if (end1 > end2) 1 else if (end1 < end2) -1 else 0
+            }
+            return@Comparator comparator
+        })
+        normalEventList.addAll(allDayEventList)
+        return normalEventList
     }
     //endregion
 
@@ -1307,9 +1436,9 @@ class WeekView : View {
         var originalEvent: WeekViewEvent? = null
         var rectF: RectF? = null
         var left: Float = 0.toFloat()
-        var width: Float = 0.toFloat()
+        var height: Float = 0.toFloat()
         var top: Float = 0.toFloat()
-        var bottom: Float = 0.toFloat()
+        var right: Float = 0.toFloat()
 
         constructor(event: WeekViewEvent, originalEvent: WeekViewEvent, rectF: RectF?) {
             this.event = event

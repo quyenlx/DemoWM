@@ -45,4 +45,5 @@ dependencies {
         exclude module: 'joda-time'
         exclude module: 'scala-library'
     }
+    compile 'com.squareup.retrofit:retrofit:1.9.0'
 }
