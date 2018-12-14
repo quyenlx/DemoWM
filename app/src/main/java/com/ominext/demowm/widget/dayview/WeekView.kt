@@ -366,7 +366,7 @@ class WeekView : View {
     private val mAllDayEventSeparatorPaint: Paint by lazy { Paint() }
     private val mEventSeparatorWidth = DimensionUtils.dpToPx(1F)
     private val mHolidays = HashMap<Calendar, Boolean>()
-    private var mHasAllDayEvents: Boolean = false
+    private var mHasAllDayEvents: Boolean = true
 
     // Listeners.
     var mInitListener: InitListener? = null
@@ -762,6 +762,25 @@ class WeekView : View {
         // Consider scroll offset.
         val leftHoursWithGaps = (-Math.ceil(((if (mCurrentOrigin.x == 0f) mCurrentOrigin.x else mCurrentOrigin.x - 5) / mWidthPerDay).toDouble())).toInt()
 
+        // Draw the partial of line separating the header (not include all day event) and all-day events
+        run {
+            val y = mHeaderTextHeight + mHeaderRowPadding * 2 - DEFAULT_STROKE_WIDTH / 2
+            canvas.drawLine(0f, y, mHeaderColumnWidth + DEFAULT_STROKE_WIDTH, y, mAllDayEventSeparatorPaint)
+        }
+
+        run {
+            val x = mHeaderColumnWidth
+            canvas.drawLine(x, 0F, x, height.toFloat(), mHeaderBackgroundPaint)
+        }
+        run {
+            val y = height - DEFAULT_STROKE_WIDTH / 2
+            canvas.drawLine(0F, y, mHeaderColumnWidth, y, mHeaderBackgroundPaint)
+        }
+        run {
+            val y: Float = mHeaderTextHeight + mHeaderRowPadding * 2 - DEFAULT_STROKE_WIDTH / 2
+            canvas.drawLine(mHeaderColumnWidth - DEFAULT_STROKE_WIDTH, y, width.toFloat(), y, mHeaderBackgroundPaint)
+        }
+
         //region Draw Date Display
         if (leftHoursWithGaps < 0) {
             mFirstVisibleDay!!.add(Calendar.DATE, leftHoursWithGaps / 25 - 1)
@@ -780,36 +799,25 @@ class WeekView : View {
         } else {
             mHeaderTextPaint.alpha = NORMAL_ALPHA
         }
-
+        mHasAllDayEvents= false
         if (mFirstVisibleDay!!.isTheSameDay(today)) {
+            mHasAllDayEvents = true
             canvas.drawRect(0F, 0F, mHeaderColumnWidth, height.toFloat(), mTodayBackgroundPaint)
         }
-
+        mHeaderTextPaint.typeface = Typeface.create(mHeaderTextPaint.typeface, Typeface.BOLD)
         val text = mDateTimeInterpreter.interpretDate(mFirstVisibleDay!!)
         canvas.drawText(text, mWidthPerDay - 20, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint)
         //endregion
 
-        // Draw the partial of line separating the header (not include all day event) and all-day events
-        run {
-            val y = mHeaderTextHeight + mHeaderRowPadding * 2 - DEFAULT_STROKE_WIDTH / 2
-            canvas.drawLine(0f, y, mHeaderColumnWidth + DEFAULT_STROKE_WIDTH, y, mAllDayEventSeparatorPaint)
-        }
-
-        run {
-            val x = mHeaderColumnWidth
+        if (mHasAllDayEvents) {
+            val x = mHeaderColumnWidth + mWidthPerDay
             canvas.drawLine(x, 0F, x, height.toFloat(), mHeaderBackgroundPaint)
         }
-        run {
-            val y = height - DEFAULT_STROKE_WIDTH / 2
-            canvas.drawLine(0F, y, mHeaderColumnWidth, y, mHeaderBackgroundPaint)
-        }
+
 
         val startFromPixel = mCurrentOrigin.x + mWidthPerDay * leftHoursWithGaps + mHeaderColumnWidth - DEFAULT_STROKE_WIDTH
         var startPixel = startFromPixel
         var day: Calendar
-        // Clip to paint events only.
-        canvas.clipRect(mHeaderColumnWidth, 0F, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
-
         //region Draw events + (rows , columns)
         val dashPath = Path()
         for (hourNumber in leftHoursWithGaps + 1..leftHoursWithGaps + mNumberOfVisibleDays + 1) {
@@ -823,6 +831,13 @@ class WeekView : View {
                 getMoreEvents(day)
                 mRefreshEvents = false
             }
+
+            val clipLeft = if (mHasAllDayEvents) {
+                mHeaderColumnWidth + mWidthPerDay
+            } else {
+                mHeaderColumnWidth
+            }
+            canvas.clipRect(clipLeft, 0F, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
 
             // Draw background color for each day.
             val start = if (startPixel < mHeaderColumnWidth) mHeaderColumnWidth else startPixel
@@ -842,9 +857,11 @@ class WeekView : View {
                 }
             }
 
+
             // Draw the lines for hours.
             val path = Path()
             for (lineHour in 0 until NUMBER_USER_DISPLAY) {
+                canvas.clipRect(mHeaderColumnWidth, 0F, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
                 val top = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * (lineHour + 1)).toFloat() + mTimeTextHeight / 2 + mHeaderMarginBottom
                 if (top > mHeaderHeight + mTimeTextHeight / 2 + mHeaderMarginBottom - mHourSeparatorHeight && top < height && startPixel + mWidthPerDay - start > 0) {
                     path.moveTo(start, top)
@@ -853,26 +870,25 @@ class WeekView : View {
                     path.reset()
                 }
 
+                canvas.clipRect(clipLeft, 0F, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
                 drawEvent(day, startPixel + mEventSeparatorWidth * 2, canvas, mHeaderHeight + mCurrentOrigin.y + (mHourHeight * lineHour).toFloat())
             }
             startPixel += mWidthPerDay
         }
         //endregion
 
-        // Clip to paint header row only.
-        canvas.clipRect(mHeaderColumnWidth + DEFAULT_STROKE_WIDTH, 0f, width.toFloat(), mHeaderHeight, Region.Op.REPLACE)
-
-        // Draw the header background.
-        canvas.drawRect(0f, 0f, width.toFloat(), mHeaderTextHeight + mHeaderRowPadding * 2, mVisibleHeaderBackgroundPaint)
-
-        //Draw the line separating the header (include all day event section) and normal event section
-        run {
-            val y: Float = mHeaderTextHeight + mHeaderRowPadding * 2 - DEFAULT_STROKE_WIDTH / 2
-            canvas.drawLine(mHeaderColumnWidth - DEFAULT_STROKE_WIDTH, y, width.toFloat(), y, mHeaderBackgroundPaint)
+        //region Draw the header row texts START
+        canvas.clipRect(mHeaderColumnWidth, 0F, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
+        startPixel = if (mHasAllDayEvents) {
+            mHeaderTextPaint.typeface = Typeface.create(mHeaderTextPaint.typeface, Typeface.NORMAL)
+            canvas.drawText("AllDay", mHeaderColumnWidth + mWidthPerDay / 2, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint)
+            canvas.clipRect(mHeaderColumnWidth + DEFAULT_STROKE_WIDTH + mWidthPerDay, 0f, width.toFloat(), mHeaderHeight, Region.Op.REPLACE)
+            startFromPixel + mWidthPerDay
+        } else {
+            canvas.clipRect(mHeaderColumnWidth + DEFAULT_STROKE_WIDTH, 0f, width.toFloat(), mHeaderHeight, Region.Op.REPLACE)
+            startFromPixel
         }
 
-        //region Draw the header row texts START
-        startPixel = startFromPixel
         for (hourNumber in leftHoursWithGaps + 1..leftHoursWithGaps + mNumberOfVisibleDays + 1) {
             // Check if the day is today.
             day = today.clone() as Calendar
