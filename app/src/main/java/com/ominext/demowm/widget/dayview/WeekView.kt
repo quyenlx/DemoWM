@@ -737,7 +737,7 @@ class WeekView : View {
         mWidthPerDay = width.toFloat() - mHeaderColumnWidth
         mWidthPerDay /= mNumberOfVisibleDays
         //calculateHeaderHeight
-        mHeaderHeight = mHeaderTextHeight + mHeaderRowPadding * 2 + 0
+        mHeaderHeight = mHeaderTextHeight + mHeaderRowPadding * 2 - DEFAULT_STROKE_WIDTH / 2
         val today = TimeUtils.today()
         mFirstVisibleDay = today.clone() as Calendar
         if (mIsFirstDraw) {
@@ -764,7 +764,7 @@ class WeekView : View {
 
         // Draw the partial of line separating the header (not include all day event) and all-day events
         run {
-            val y = mHeaderTextHeight + mHeaderRowPadding * 2 - DEFAULT_STROKE_WIDTH / 2
+            val y = mHeaderHeight
             canvas.drawLine(0f, y, mHeaderColumnWidth + DEFAULT_STROKE_WIDTH, y, mAllDayEventSeparatorPaint)
         }
 
@@ -777,7 +777,7 @@ class WeekView : View {
             canvas.drawLine(0F, y, mHeaderColumnWidth, y, mHeaderBackgroundPaint)
         }
         run {
-            val y: Float = mHeaderTextHeight + mHeaderRowPadding * 2 - DEFAULT_STROKE_WIDTH / 2
+            val y: Float = mHeaderHeight
             canvas.drawLine(mHeaderColumnWidth - DEFAULT_STROKE_WIDTH, y, width.toFloat(), y, mHeaderBackgroundPaint)
         }
 
@@ -799,12 +799,13 @@ class WeekView : View {
         } else {
             mHeaderTextPaint.alpha = NORMAL_ALPHA
         }
-        mHasAllDayEvents= false
+        mHasAllDayEvents = false
         if (mFirstVisibleDay!!.isTheSameDay(today)) {
             mHasAllDayEvents = true
             canvas.drawRect(0F, 0F, mHeaderColumnWidth, height.toFloat(), mTodayBackgroundPaint)
         }
         mHeaderTextPaint.typeface = Typeface.create(mHeaderTextPaint.typeface, Typeface.BOLD)
+        mHeaderTextPaint.textSize = mTextSize.toFloat()
         val text = mDateTimeInterpreter.interpretDate(mFirstVisibleDay!!)
         canvas.drawText(text, mWidthPerDay - 20, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint)
         //endregion
@@ -837,12 +838,13 @@ class WeekView : View {
             } else {
                 mHeaderColumnWidth
             }
-            canvas.clipRect(clipLeft, 0F, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
+            canvas.clipRect(clipLeft, mHeaderHeight, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
 
             // Draw background color for each day.
             val start = if (startPixel < mHeaderColumnWidth) mHeaderColumnWidth else startPixel
             if (mWidthPerDay + startPixel - start > 0) {
-                if (hour == 0 && hourNumber != leftHoursWithGaps + 1) {
+                val offset = if (mHasAllDayEvents) 1 else 0
+                if (hour == offset && hourNumber != leftHoursWithGaps + 1) {
                     mDayBackgroundPaint.color = STROKE_HIGHLIGHT_COLOR
                     mDayBackgroundPaint.strokeWidth = STROKE_HIGHLIGHT_WIDTH
                     canvas.drawLine(startPixel - DEFAULT_STROKE_WIDTH, mHeaderHeight + mTimeTextHeight / 2 + mHeaderMarginBottom, startPixel - DEFAULT_STROKE_WIDTH, height.toFloat(), mDayBackgroundPaint)
@@ -870,7 +872,7 @@ class WeekView : View {
                     path.reset()
                 }
 
-                canvas.clipRect(clipLeft, 0F, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
+                canvas.clipRect(clipLeft, mHeaderHeight, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
                 drawEvent(day, startPixel + mEventSeparatorWidth * 2, canvas, mHeaderHeight + mCurrentOrigin.y + (mHourHeight * lineHour).toFloat())
             }
             startPixel += mWidthPerDay
@@ -881,6 +883,7 @@ class WeekView : View {
         canvas.clipRect(mHeaderColumnWidth, 0F, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
         startPixel = if (mHasAllDayEvents) {
             mHeaderTextPaint.typeface = Typeface.create(mHeaderTextPaint.typeface, Typeface.NORMAL)
+            mHeaderTextPaint.textSize = mTextSizeTime.toFloat()
             canvas.drawText("AllDay", mHeaderColumnWidth + mWidthPerDay / 2, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint)
             canvas.clipRect(mHeaderColumnWidth + DEFAULT_STROKE_WIDTH + mWidthPerDay, 0f, width.toFloat(), mHeaderHeight, Region.Op.REPLACE)
             startFromPixel + mWidthPerDay
