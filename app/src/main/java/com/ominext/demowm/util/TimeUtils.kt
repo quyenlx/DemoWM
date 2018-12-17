@@ -47,3 +47,9 @@ fun Calendar.isTheSameDay(calendar: Calendar): Boolean {
             && this.get(Calendar.DAY_OF_YEAR) == calendar.get(Calendar.DAY_OF_YEAR)
 }
 
+fun Calendar.isTheSameHour(calendar: Calendar): Boolean {
+    return this.get(Calendar.YEAR) == calendar.get(Calendar.YEAR)
+            && this.get(Calendar.DAY_OF_YEAR) == calendar.get(Calendar.DAY_OF_YEAR)
+            && this.get(Calendar.HOUR_OF_DAY) == calendar.get(Calendar.HOUR_OF_DAY)
+}
+

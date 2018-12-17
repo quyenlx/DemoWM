@@ -42,13 +42,13 @@ class CustomViewActivity : AppCompatActivity(), MonthLoader.MonthChangeListener,
 
     private fun getEvent(): List<WeekViewEvent> {
         val calendar = Calendar.getInstance()
-        return (1..10).map {
+        return (0..1).map {
             val startTime = (calendar.clone() as Calendar).apply {
-                set(Calendar.HOUR_OF_DAY, it)
+                set(Calendar.HOUR_OF_DAY, it * 10)
             }
 
             val endTime = (calendar.clone() as Calendar).apply {
-                set(Calendar.HOUR_OF_DAY, it + 1)
+                set(Calendar.HOUR_OF_DAY, it * 10 + 10)
             }
             return@map WeekViewEvent().apply {
                 this.mName = "event $it"

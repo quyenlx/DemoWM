@@ -25,6 +25,13 @@ class WeekViewEvent {
     var mColor: Int = 0
     var mAllDay: Boolean = false
 
+    val hoursBetween: Int
+        get() {
+            val hourStart = mStartTime?.get(Calendar.HOUR_OF_DAY) ?: 0
+            val hourEnd = mEndTime?.get(Calendar.HOUR_OF_DAY) ?: 0
+            return hourEnd - hourStart
+        }
+
     fun splitEvents(): List<WeekViewEvent> {
         val events = ArrayList<WeekViewEvent>()
         var endTime = this.mEndTime!!.clone() as Calendar

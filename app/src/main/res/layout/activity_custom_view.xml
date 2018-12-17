@@ -14,6 +14,7 @@
         app:eventCornerRadius="1.75dp"
         app:eventPadding="2.5dp"
         app:eventTextColor="@android:color/white"
+        app:eventTextSize="14sp"
         app:headerColumnBackground="#ffffffff"
         app:headerColumnPadding="40dp"
         app:headerColumnTextColor="#3B3732"
