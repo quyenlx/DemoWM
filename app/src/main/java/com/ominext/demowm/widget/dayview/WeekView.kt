@@ -704,7 +704,7 @@ class WeekView : View {
             if (top < height) {
                 val yText = top + 60F.dp2Px()
                 val xText = 30F.dp2Px()
-                if(i <mEventRects.size){
+                if (i < mEventRects.size) {
                     canvas.drawBitmap(mBitmapAvatar, 10F.dp2Px(), top, mPaintAvatar)
 
                     if (i != 0) {
@@ -804,7 +804,7 @@ class WeekView : View {
         mHeaderTextPaint.typeface = Typeface.create(mHeaderTextPaint.typeface, Typeface.BOLD)
         mHeaderTextPaint.textSize = mTextSize.toFloat()
         val text = mDateTimeInterpreter.interpretDate(mFirstVisibleDay!!)
-        canvas.drawText(text, mWidthPerHour - 20, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint)
+        canvas.drawText(text, mHeaderColumnWidth / 2, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint)
         //endregion
 
         if (mHasAllDayEvents) {
