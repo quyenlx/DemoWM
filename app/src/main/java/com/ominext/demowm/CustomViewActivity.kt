@@ -3,6 +3,7 @@ package com.ominext.demowm
 import android.graphics.Color
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import com.ominext.demowm.apiclient.Event
 import com.ominext.demowm.widget.dayview.MonthLoader
@@ -16,45 +17,38 @@ import java.util.*
 class CustomViewActivity : AppCompatActivity(), MonthLoader.MonthChangeListener, Callback<MutableList<Event>> {
     private val events = ArrayList<WeekViewEvent>()
     private var calledNetwork = false
-
+    private val random = Random()
+    private val max = 10
+    private val min = 1
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_custom_view)
         weekView.mWeekViewLoader = MonthLoader(this)
     }
 
-    override fun onMonthChange(newYear: Int, newMonth: Int): List<WeekViewEvent> {
-//        // Download events from network if it hasn't been done already. To understand how events are
-//        // downloaded using retrofit, visit http://square.github.io/retrofit
-//        if (!calledNetwork) {
-//            val retrofit = RestAdapter.Builder()
-//                    .setEndpoint("https://api.myjson.com/bins")
-//                    .build()
-//            val service = retrofit.create<MyJsonService>(MyJsonService::class.java)
-//            service.listEvents(this)
-//            calledNetwork = true
-//        }
-
-        // Return only the events that matches newYear and newMonth.
-//        return events.filter { eventMatches(it, newYear, newMonth) }.take(10)
+    override fun onMonthChange(newYear: Int, newMonth: Int): List<List<WeekViewEvent>> {
         return getEvent()
     }
 
-    private fun getEvent(): List<WeekViewEvent> {
+    private fun getEvent(): List<List<WeekViewEvent>> {
+        Log.e("WeekView", "getEvent")
         val calendar = Calendar.getInstance()
-        return (0..1).map {
-            val startTime = (calendar.clone() as Calendar).apply {
-                set(Calendar.HOUR_OF_DAY, it * 10)
-            }
+        return (0 until 3).map { memberIndex ->
+            return@map (0 until 3).map { eventIndex ->
+                val start = memberIndex + eventIndex + random.nextInt(max - min + 1) + min
+                val startTime = (calendar.clone() as Calendar).apply {
+                    set(Calendar.HOUR_OF_DAY, start)
+                }
 
-            val endTime = (calendar.clone() as Calendar).apply {
-                set(Calendar.HOUR_OF_DAY, it * 10 + 10)
-            }
-            return@map WeekViewEvent().apply {
-                this.mName = "event $it"
-                this.mStartTime = startTime
-                this.mEndTime = endTime
-                this.mColor = Color.RED
+                val endTime = (calendar.clone() as Calendar).apply {
+                    set(Calendar.HOUR_OF_DAY, start + random.nextInt(max - min + 1) + min)
+                }
+                return@map WeekViewEvent().apply {
+                    this.mName = "event $eventIndex"
+                    this.mStartTime = startTime
+                    this.mEndTime = endTime
+                    this.mColor = Color.RED
+                }
             }
         }
     }
