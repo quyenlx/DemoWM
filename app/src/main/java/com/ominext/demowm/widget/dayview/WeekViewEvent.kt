@@ -25,11 +25,18 @@ class WeekViewEvent {
     var mColor: Int = 0
     var mAllDay: Boolean = false
 
-    val hoursBetween: Int
+    var minuteStart: Int = 0
         get() {
-            val hourStart = mStartTime?.get(Calendar.HOUR_OF_DAY) ?: 0
-            val hourEnd = mEndTime?.get(Calendar.HOUR_OF_DAY) ?: 0
-            return hourEnd - hourStart
+            return mStartTime!!.get(Calendar.MINUTE)
+        }
+    var minuteEnd: Int = 0
+        get() {
+            return mEndTime!!.get(Calendar.MINUTE)
+        }
+    val hoursBetween: Float
+        get() {
+            val offset = mEndTime!!.timeInMillis - mStartTime!!.timeInMillis
+            return offset / (1000 * 60 * 60F)
         }
 
     fun splitEvents(): List<WeekViewEvent> {
@@ -52,6 +59,8 @@ class WeekViewEvent {
             eventFirst.mEndTime = endTime
             eventFirst.mAllDay = this.mAllDay
             eventFirst.mColor = this.mColor
+            eventFirst.minuteStart = mStartTime!!.get(Calendar.MINUTE)
+            eventFirst.minuteEnd = mEndTime!!.get(Calendar.MINUTE)
             events.add(eventFirst)
 
             // Add other days.
@@ -95,7 +104,7 @@ class WeekViewEvent {
                 val eventLast = WeekViewEvent()
                 eventLast.mId = this.mId
                 eventLast.mName = this.mName
-                eventLast.mStartTime = this.mStartTime
+                eventLast.mStartTime = startTime
                 eventLast.mEndTime = this.mEndTime
                 eventLast.mAllDay = this.mAllDay
                 eventLast.mColor = this.mColor

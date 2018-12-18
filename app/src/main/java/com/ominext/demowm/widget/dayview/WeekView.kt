@@ -795,9 +795,9 @@ class WeekView : View {
         } else {
             mHeaderTextPaint.alpha = NORMAL_ALPHA
         }
-        mHasAllDayEvents = false
+//        mHasAllDayEvents = false
         if (mFirstVisibleDay!!.isTheSameDay(today)) {
-            mHasAllDayEvents = true
+//            mHasAllDayEvents = true
             canvas.drawRect(0F, 0F, mHeaderColumnWidth, height.toFloat(), mTodayBackgroundPaint)
         }
 
@@ -824,7 +824,7 @@ class WeekView : View {
             day.add(Calendar.HOUR_OF_DAY, hourNumber - 1)
             val hour = day.get(Calendar.HOUR_OF_DAY)
 
-            if (mRefreshEvents || (hourNumber == leftHoursWithGaps + 1 && mFetchedPeriod != mWeekViewLoader?.toWeekViewPeriodIndex(day) && Math.abs(mFetchedPeriod - mWeekViewLoader?.toWeekViewPeriodIndex(day)!!) > 0.5)) {
+            if (mRefreshEvents || (hourNumber == leftHoursWithGaps + 1 && mFetchedPeriod != mWeekViewLoader?.toWeekViewPeriodIndex(day))) {
                 getMoreEvents(day)
                 mRefreshEvents = false
             }
@@ -933,6 +933,10 @@ class WeekView : View {
 
     }
 
+    /**
+     * @param position
+     * @param startTop
+     */
     private fun drawEvent(day: Calendar, startFromPixel: Float, canvas: Canvas, startTop: Float, position: Int) {
         if (mEventRects.size <= 0) return
 
@@ -941,23 +945,27 @@ class WeekView : View {
         for (i in mEventRects.indices) {
             val event = mEventRects[i].event
             val eventOriginal = mEventRects[i].originalEvent
-            if (event.mAllDay || !day.isTheSameHour(event.mStartTime!!)) continue
 
-            val isTheSameHour = day.isTheSameHour(eventOriginal.mStartTime!!)
+            val isTheSameHour = day.isTheSameHour(event.mStartTime!!)
+
+            if (event.mAllDay || !isTheSameHour) continue
+
             if (isTheSameHour) {
                 val top = startTop + mEventRects[i].top * mHourHeight
-                val hoursBetween = eventOriginal.hoursBetween
+                val hoursBetween = event.hoursBetween
                 val bottom = top + mEventRects[i].height * mHourHeight - mEventSeparatorWidth * 4
-                val right = startFromPixel + mWidthPerHour * hoursBetween - mEventSeparatorWidth * 4
+                val left = startFromPixel + event.minuteStart * mWidthPerHour / 60
+                val right = left + mWidthPerHour * hoursBetween - mEventSeparatorWidth * 4
                 mEventRects[i].rectF = null
                 if (startFromPixel > right || startTop > height || bottom <= 0) continue
-                mEventRects[i].rectF = RectF(startFromPixel, top, right, bottom)
+                mEventRects[i].rectF = RectF(left, top, right, bottom)
 
                 if (eventOriginal.mEndTime!!.before(TimeUtils.today())) {
                     mEventBackgroundPaint.alpha = PAST_ALPHA
                 }
+                mEventBackgroundPaint.color = event.mColor
                 canvas.drawRoundRect(mEventRects[i].rectF, mEventCornerRadius.toFloat(), mEventCornerRadius.toFloat(), mEventBackgroundPaint)
-                drawEventTitle(mEventRects[i], canvas, top, startFromPixel)
+                drawEventTitle(mEventRects[i], canvas, top, left)
             }
         }
     }

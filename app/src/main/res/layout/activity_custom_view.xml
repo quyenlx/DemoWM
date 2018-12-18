@@ -29,7 +29,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:noOfVisibleDays="3"
+        app:noOfVisibleDays="5"
         app:nowLineColor="#F18D00"
         app:showDistinctWeekendColor="true"
         app:showNowLine="true"
