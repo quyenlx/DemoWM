@@ -358,7 +358,7 @@ class WeekView : View {
     private val mAllDayEventSeparatorPaint: Paint by lazy { Paint() }
     private val mEventSeparatorWidth = DimensionUtils.dpToPx(1F)
     private val mHolidays = HashMap<Calendar, Boolean>()
-    private var mHasAllDayEvents: Boolean = false
+    private var mHasAllDayEvents: Boolean = true
 
     // Listeners.
     var mInitListener: InitListener? = null
@@ -792,12 +792,11 @@ class WeekView : View {
 
         if (mFirstVisibleDay!!.before(today)) {
             mHeaderTextPaint.alpha = DAY_PAST_ALPHA
+
         } else {
             mHeaderTextPaint.alpha = NORMAL_ALPHA
         }
-//        mHasAllDayEvents = false
         if (mFirstVisibleDay!!.isTheSameDay(today)) {
-//            mHasAllDayEvents = true
             canvas.drawRect(0F, 0F, mHeaderColumnWidth, height.toFloat(), mTodayBackgroundPaint)
         }
 
@@ -807,15 +806,20 @@ class WeekView : View {
         canvas.drawText(text, mHeaderColumnWidth / 2, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint)
         //endregion
 
+        //region #Draw event allday
         if (mHasAllDayEvents) {
             val x = mHeaderColumnWidth + mWidthPerHour
             canvas.drawLine(x, 0F, x, height.toFloat(), mHeaderBackgroundPaint)
+            mEventRects.forEachIndexed { position, mEventRects ->
+                val startTop = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * position).toFloat()
+                drawEventAllDay(mEventRects, mFirstVisibleDay, canvas, startTop)
+            }
         }
+        //endregion
 
         val startFromPixel = mCurrentOrigin.x + mWidthPerHour * leftHoursWithGaps + mHeaderColumnWidth - DEFAULT_STROKE_WIDTH
         var startPixel = startFromPixel
         var day: Calendar
-
 
         //region #Draw(rows , columns)
         val dashPath = Path()
@@ -919,11 +923,10 @@ class WeekView : View {
             while (hourNumber <= leftHoursWithGaps + BUFFER_HOUR + mNumberOfVisibleDays * 2 && i < mPositionFilled.size) {
                 day = today.clone() as Calendar
                 day.add(Calendar.HOUR_OF_DAY, hourNumber - 1)
-                (0 until mEventRects.size)
-                        .forEach { position ->
-                            val startTop = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * position).toFloat()
-                            drawEvent(day, startPixel, canvas, startTop, position)
-                        }
+                mEventRects.forEachIndexed { position, mEventRects ->
+                    val startTop = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * position).toFloat()
+                    drawEvent(mEventRects, day, startPixel, canvas, startTop)
+                }
                 startPixel += mWidthPerHour
                 hourNumber++
                 i++
@@ -934,13 +937,40 @@ class WeekView : View {
     }
 
     /**
-     * @param position
      * @param startTop
      */
-    private fun drawEvent(day: Calendar, startFromPixel: Float, canvas: Canvas, startTop: Float, position: Int) {
-        if (mEventRects.size <= 0) return
+    private fun drawEventAllDay(mEventRects: List<EventRect>, mFirstVisibleDay: Calendar?, canvas: Canvas, startTop: Float) {
+        for (i in mEventRects.indices) {
+            val event = mEventRects[i].event
+            val eventOriginal = mEventRects[i].originalEvent
 
-        val mEventRects = mEventRects[position]
+            val isTheSameDay = mFirstVisibleDay!!.isTheSameDay(event.mStartTime!!)
+
+            if (!event.mAllDay || !isTheSameDay) continue
+
+            val top = startTop + mEventRects[i].top * mHourHeight
+            val bottom = top + mEventRects[i].height * mHourHeight - mEventSeparatorWidth * 4
+            val left = mHeaderColumnWidth
+            val right = left + mWidthPerHour - mEventSeparatorWidth * 4
+
+            mEventRects[i].rectF = null
+            if (left > right || startTop > height || bottom <= 0) continue
+            mEventRects[i].rectF = RectF(left, top, right, bottom)
+
+            if (eventOriginal.mEndTime!!.before(TimeUtils.today())) {
+                mEventBackgroundPaint.alpha = PAST_ALPHA
+            }
+            mEventBackgroundPaint.color = event.mColor
+            canvas.drawRoundRect(mEventRects[i].rectF, mEventCornerRadius.toFloat(), mEventCornerRadius.toFloat(), mEventBackgroundPaint)
+            drawEventTitle(mEventRects[i], canvas, top, left)
+            mEventBackgroundPaint.alpha = NORMAL_ALPHA
+        }
+    }
+
+    /**
+     * @param startTop
+     */
+    private fun drawEvent(mEventRects: List<EventRect>, day: Calendar, startFromPixel: Float, canvas: Canvas, startTop: Float) {
 
         for (i in mEventRects.indices) {
             val event = mEventRects[i].event
@@ -950,23 +980,22 @@ class WeekView : View {
 
             if (event.mAllDay || !isTheSameHour) continue
 
-            if (isTheSameHour) {
-                val top = startTop + mEventRects[i].top * mHourHeight
-                val hoursBetween = event.hoursBetween
-                val bottom = top + mEventRects[i].height * mHourHeight - mEventSeparatorWidth * 4
-                val left = startFromPixel + event.minuteStart * mWidthPerHour / 60
-                val right = left + mWidthPerHour * hoursBetween - mEventSeparatorWidth * 4
-                mEventRects[i].rectF = null
-                if (startFromPixel > right || startTop > height || bottom <= 0) continue
-                mEventRects[i].rectF = RectF(left, top, right, bottom)
+            val top = startTop + mEventRects[i].top * mHourHeight
+            val hoursBetween = event.hoursBetween
+            val bottom = top + mEventRects[i].height * mHourHeight - mEventSeparatorWidth * 4
+            val left = startFromPixel + event.minuteStart * mWidthPerHour / 60
+            val right = left + mWidthPerHour * hoursBetween - mEventSeparatorWidth * 4
+            mEventRects[i].rectF = null
+            if (left > right || startTop > height || bottom <= 0) continue
+            mEventRects[i].rectF = RectF(left, top, right, bottom)
 
-                if (eventOriginal.mEndTime!!.before(TimeUtils.today())) {
-                    mEventBackgroundPaint.alpha = PAST_ALPHA
-                }
-                mEventBackgroundPaint.color = event.mColor
-                canvas.drawRoundRect(mEventRects[i].rectF, mEventCornerRadius.toFloat(), mEventCornerRadius.toFloat(), mEventBackgroundPaint)
-                drawEventTitle(mEventRects[i], canvas, top, left)
+            if (eventOriginal.mEndTime!!.timeInMillis < System.currentTimeMillis()) {
+                mEventBackgroundPaint.alpha = PAST_ALPHA
             }
+            mEventBackgroundPaint.color = event.mColor
+            canvas.drawRoundRect(mEventRects[i].rectF, mEventCornerRadius.toFloat(), mEventCornerRadius.toFloat(), mEventBackgroundPaint)
+            drawEventTitle(mEventRects[i], canvas, top, left)
+            mEventBackgroundPaint.alpha = NORMAL_ALPHA
         }
     }
 
