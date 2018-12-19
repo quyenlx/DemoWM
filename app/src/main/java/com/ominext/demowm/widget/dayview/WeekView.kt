@@ -13,10 +13,7 @@ import android.text.*
 import android.text.format.DateUtils
 import android.util.AttributeSet
 import android.util.TypedValue
-import android.view.GestureDetector
-import android.view.MotionEvent
-import android.view.View
-import android.view.ViewConfiguration
+import android.view.*
 import android.widget.OverScroller
 import android.widget.Toast
 import com.ominext.demowm.R
@@ -478,7 +475,23 @@ class WeekView : View {
                 val rect = i.value
                 if (e.x > rect.left && e.x < rect.right && e.y > rect.top && e.y < rect.bottom) {
                     Toast.makeText(context, "Clicked! ${i.key}", Toast.LENGTH_SHORT).show()
-                    break
+                    return super.onSingleTapConfirmed(e)
+                }
+            }
+
+            run {
+                if (e.x < mHeaderColumnWidth) return false
+                val mapEventRects = mMapEventRects
+                mapEventRects.forEach { eventRects ->
+                    for (eventRect in eventRects) {
+                        if (mHasAllDayEvents && e.x <= mHeaderColumnWidth + mWidthPerHour && !eventRect.event.mAllDay) continue
+                        val rectF = eventRect.rectF
+                        if (rectF != null && e.x > rectF.left && e.x < rectF.right && e.y > rectF.top && e.y < rectF.bottom) {
+                            Toast.makeText(context, eventRect.event.mName, Toast.LENGTH_SHORT).show()
+                            playSoundEffect(SoundEffectConstants.CLICK)
+                            return super.onSingleTapConfirmed(e)
+                        }
+                    }
                 }
             }
 
@@ -486,7 +499,7 @@ class WeekView : View {
         }
     }
 
-    private var mEventRects: MutableList<MutableList<EventRect>> = mutableListOf()
+    private var mMapEventRects: MutableList<MutableList<EventRect>> = mutableListOf()
     private var mCurrentPeriodEvents: List<List<WeekViewEvent>>? = null
     private var mFetchedPeriod = -1 // the middle period the calendar has fetched.
     private var mRefreshEvents = false
@@ -679,7 +692,7 @@ class WeekView : View {
      * Calculates the height of the header.
      */
     private fun checkHasAllDay(mFirstVisibleDay: Calendar?) {
-        mHasAllDayEvents = mEventRects
+        mHasAllDayEvents = mMapEventRects
                 .firstOrNull { eventsR ->
                     val eventRect = eventsR.firstOrNull { eventRect -> (eventRect.event.mStartTime!!.isTheSameDay(mFirstVisibleDay!!) && eventRect.event.mAllDay) }
                     return@firstOrNull eventRect != null
@@ -707,7 +720,7 @@ class WeekView : View {
             if (top < height && top > -mHourHeight) {
                 val yText = top + 60F.dp2Px()
                 val xText = 30F.dp2Px()
-                if (i < mEventRects.size) {
+                if (i < mMapEventRects.size) {
                     canvas.drawBitmap(mBitmapAvatar, 10F.dp2Px(), top, mPaintAvatar)
 
                     if (i != 0) {
@@ -822,9 +835,9 @@ class WeekView : View {
             val x = mHeaderColumnWidth + mWidthPerHour
             canvas.drawLine(x, 0F, x, height.toFloat(), mHeaderBackgroundPaint)
             canvas.clipRect(mHeaderColumnWidth, mHeaderHeight, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
-            mEventRects.forEachIndexed { position, mEventRects ->
+            mMapEventRects.forEachIndexed { position, mEventRects ->
                 val startTop = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * position).toFloat()
-                drawEventAllDay(mEventRects, mFirstVisibleDay, canvas, startTop)
+                drawEventsAllDay(mEventRects, mFirstVisibleDay, canvas, startTop)
             }
         }
         //endregion
@@ -937,9 +950,9 @@ class WeekView : View {
             while (hourNumber <= leftHoursWithGaps + BUFFER_HOUR + mNumberOfVisibleDays * 2 && i < mPositionFilled.size) {
                 day = today.clone() as Calendar
                 day.add(Calendar.HOUR_OF_DAY, hourNumber - 1)
-                mEventRects.forEachIndexed { position, mEventRects ->
+                mMapEventRects.forEachIndexed { position, mEventRects ->
                     val startTop = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * position).toFloat()
-                    drawEvent(mEventRects, day, startPixel, canvas, startTop)
+                    drawEvents(mEventRects, day, startPixel, canvas, startTop)
                 }
                 startPixel += mWidthPerHour
                 hourNumber++
@@ -947,7 +960,6 @@ class WeekView : View {
             }
         }
         //endregion
-
     }
 
     private fun getMaxOverScrollVertical() = mHourHeight * countStaff
@@ -955,7 +967,7 @@ class WeekView : View {
     /**
      * @param startTop
      */
-    private fun drawEventAllDay(mEventRects: List<EventRect>, mFirstVisibleDay: Calendar?, canvas: Canvas, startTop: Float) {
+    private fun drawEventsAllDay(mEventRects: List<EventRect>, mFirstVisibleDay: Calendar?, canvas: Canvas, startTop: Float) {
         for (i in mEventRects.indices) {
             val event = mEventRects[i].event
             val eventOriginal = mEventRects[i].originalEvent
@@ -986,7 +998,7 @@ class WeekView : View {
     /**
      * @param startTop
      */
-    private fun drawEvent(mEventRects: List<EventRect>, day: Calendar, startFromPixel: Float, canvas: Canvas, startTop: Float) {
+    private fun drawEvents(mEventRects: List<EventRect>, day: Calendar, startFromPixel: Float, canvas: Canvas, startTop: Float) {
 
         for (i in mEventRects.indices) {
             val event = mEventRects[i].event
@@ -1047,7 +1059,7 @@ class WeekView : View {
             throw IllegalStateException("You must provide a MonthChangeListener")
         }
         if (mRefreshEvents) {
-            mEventRects.forEach {
+            mMapEventRects.forEach {
                 it.clear()
             }
             mCurrentPeriodEvents = null
@@ -1064,14 +1076,14 @@ class WeekView : View {
                     currentPeriodEvents = mWeekViewLoader?.onLoad(periodToFetch)
 
                 // Clear events.
-                mEventRects.forEach {
+                mMapEventRects.forEach {
                     it.clear()
                 }
                 countMember = currentPeriodEvents!!.size
 
                 (0 until countMember)
                         .forEach {
-                            mEventRects.add(mutableListOf())
+                            mMapEventRects.add(mutableListOf())
                         }
 
                 sortAndCacheEvents(currentPeriodEvents)
@@ -1082,11 +1094,11 @@ class WeekView : View {
         }
 
         // Prepare to calculate positions of each events.
-        val tempEvents = mEventRects
-        mEventRects = mutableListOf()
+        val tempEvents = mMapEventRects
+        mMapEventRects = mutableListOf()
         (0 until countMember)
                 .forEach {
-                    mEventRects.add(mutableListOf())
+                    mMapEventRects.add(mutableListOf())
                 }
 
         // Iterate through each day with events to calculate the position of the events.
@@ -1201,7 +1213,7 @@ class WeekView : View {
                         eventRect.left = 0f
                         eventRect.right = mAllDayEventHeight.toFloat()
                     }
-                    mEventRects[index].add(eventRect)
+                    mMapEventRects[index].add(eventRect)
                 }
                 j++
             }
@@ -1543,7 +1555,7 @@ class WeekView : View {
 
         event.splitEvents()
                 .map { EventRect(it, event, null) }
-                .forEach { mEventRects[index].add(it) }
+                .forEach { mMapEventRects[index].add(it) }
     }
 
 
