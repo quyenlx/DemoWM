@@ -32,25 +32,25 @@ class CustomViewActivity : AppCompatActivity(), MonthLoader.MonthChangeListener,
 
     private fun getEvent(): List<List<WeekViewEvent>> {
         val calendar = Calendar.getInstance()
-        return (0 until 1).map { memberIndex ->
+        return (0 until 100).map { memberIndex ->
             val color = Color.argb(255, random.nextInt(256), random.nextInt(256), random.nextInt(256))
-            return@map (0 until 1).map { eventIndex ->
-                val start = memberIndex + eventIndex + random.nextInt(max - min + 1) + min
+            return@map (0 until 20).map { eventIndex ->
+                val start = eventIndex + random.nextInt(max - min + 1) + min
                 val startTime = (calendar.clone() as Calendar).apply {
-                    set(Calendar.HOUR_OF_DAY, 16)
-                    set(Calendar.MINUTE, 0)
+                    add(Calendar.DAY_OF_WEEK, eventIndex / 2)
+                    set(Calendar.HOUR_OF_DAY, start)
                 }
                 val end = if (start < 24) start + random.nextInt(max - min + 1) + min else 23
                 val endTime = (calendar.clone() as Calendar).apply {
-                    set(Calendar.HOUR_OF_DAY, 17)
-                    set(Calendar.MINUTE, 17)
+                    add(Calendar.DAY_OF_WEEK, eventIndex / 2)
+                    set(Calendar.HOUR_OF_DAY, end)
                 }
                 return@map WeekViewEvent().apply {
-                    this.mName = "event $memberIndex -  $eventIndex"
+                    this.mName = "$memberIndex-$eventIndex"
                     this.mStartTime = startTime
                     this.mEndTime = endTime
                     this.mColor = color
-                    this.mAllDay = true
+                    this.mAllDay = memberIndex % 5 == eventIndex
                 }
             }
         }

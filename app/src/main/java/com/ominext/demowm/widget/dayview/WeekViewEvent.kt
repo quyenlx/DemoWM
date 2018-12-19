@@ -29,10 +29,7 @@ class WeekViewEvent {
         get() {
             return mStartTime!!.get(Calendar.MINUTE)
         }
-    var minuteEnd: Int = 0
-        get() {
-            return mEndTime!!.get(Calendar.MINUTE)
-        }
+
     val hoursBetween: Float
         get() {
             val offset = mEndTime!!.timeInMillis - mStartTime!!.timeInMillis
@@ -59,8 +56,6 @@ class WeekViewEvent {
             eventFirst.mEndTime = endTime
             eventFirst.mAllDay = this.mAllDay
             eventFirst.mColor = this.mColor
-            eventFirst.minuteStart = mStartTime!!.get(Calendar.MINUTE)
-            eventFirst.minuteEnd = mEndTime!!.get(Calendar.MINUTE)
             events.add(eventFirst)
 
             // Add other days.
