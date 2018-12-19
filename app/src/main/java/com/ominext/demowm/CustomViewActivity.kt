@@ -32,7 +32,7 @@ class CustomViewActivity : AppCompatActivity(), MonthLoader.MonthChangeListener,
 
     private fun getEvent(): List<List<WeekViewEvent>> {
         val calendar = Calendar.getInstance()
-        return (0 until 100).map { memberIndex ->
+        return (0 until 500).map { memberIndex ->
             val color = Color.argb(255, random.nextInt(256), random.nextInt(256), random.nextInt(256))
             return@map (0 until 20).map { eventIndex ->
                 val start = eventIndex + random.nextInt(max - min + 1) + min

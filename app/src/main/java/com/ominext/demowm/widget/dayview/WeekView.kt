@@ -508,7 +508,12 @@ class WeekView : View {
     private var mPositionFilled: Array<MutableSet<Int>> = Array(BUFFER_HOUR + mNumberOfVisibleDays * 2, { ArraySet<Int>() })
     private var mAllDayEventNumArray: IntArray = IntArray(BUFFER_HOUR + mNumberOfVisibleDays * 2)
     private var mOriginalAllDayEvent: BooleanArray = BooleanArray(BUFFER_HOUR + mNumberOfVisibleDays * 2)
+
     private var countStaff = 0
+        set(value) {
+            field = value
+            postInvalidate()
+        }
 
     constructor (context: Context) : this(context, null)
 
@@ -569,7 +574,6 @@ class WeekView : View {
     }
 
     private fun init() {
-        countStaff = 100
 
         // Scrolling initialization.
         mGestureDetector = GestureDetectorCompat(mContext, mGestureListener)
@@ -713,14 +717,16 @@ class WeekView : View {
         // Clip to paint in time column only.
         canvas.clipRect(0f, mHeaderHeight, mHeaderColumnWidth, height.toFloat(), Region.Op.REPLACE)
 
-        for (i in 0 until countStaff) {
+        val totalLine = if (countStaff < 10) 10 else countStaff
+
+        for (i in 0 until totalLine) {
             val top = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * i).toFloat() + 2F.dp2Px()
             val topLine = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * (i + 1)).toFloat() + mTimeTextHeight / 2 + mHeaderMarginBottom
 
-            if (top < height && top > -mHourHeight) {
+            if (top.inScreenVertical()) {
                 val yText = top + 60F.dp2Px()
                 val xText = 30F.dp2Px()
-                if (i < mMapEventRects.size) {
+                if (i < countStaff) {
                     canvas.drawBitmap(mBitmapAvatar, 10F.dp2Px(), top, mPaintAvatar)
 
                     if (i != 0) {
@@ -837,7 +843,8 @@ class WeekView : View {
             canvas.clipRect(mHeaderColumnWidth, mHeaderHeight, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
             mMapEventRects.forEachIndexed { position, mEventRects ->
                 val startTop = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * position).toFloat()
-                drawEventsAllDay(mEventRects, mFirstVisibleDay, canvas, startTop)
+                if (startTop.inScreenVertical())
+                    drawEventsAllDay(mEventRects, mFirstVisibleDay, canvas, startTop)
             }
         }
         //endregion
@@ -858,6 +865,7 @@ class WeekView : View {
             if (mRefreshEvents || (hourNumber == leftHoursWithGaps + 1 && mFetchedPeriod != mWeekViewLoader?.toWeekViewPeriodIndex(day))) {
                 getMoreEvents(day)
                 mRefreshEvents = false
+                countStaff = mMapEventRects.size
             }
 
             val clipLeft = if (mHasAllDayEvents) {
@@ -889,7 +897,8 @@ class WeekView : View {
 
             // Draw the lines for hours.
             val path = Path()
-            for (lineHour in 0 until countStaff) {
+            val totalLine = if (countStaff < 10) 10 else countStaff
+            for (lineHour in 0 until totalLine) {
                 canvas.clipRect(mHeaderColumnWidth, 0F, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
                 val top = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * (lineHour + 1)).toFloat() + mTimeTextHeight / 2 + mHeaderMarginBottom
                 if (top > mHeaderHeight + mTimeTextHeight / 2 + mHeaderMarginBottom - mHourSeparatorHeight && top < height && startPixel + mWidthPerHour - start > 0) {
@@ -950,10 +959,13 @@ class WeekView : View {
             while (hourNumber <= leftHoursWithGaps + BUFFER_HOUR + mNumberOfVisibleDays * 2 && i < mPositionFilled.size) {
                 day = today.clone() as Calendar
                 day.add(Calendar.HOUR_OF_DAY, hourNumber - 1)
-                mMapEventRects.forEachIndexed { position, mEventRects ->
-                    val startTop = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * position).toFloat()
-                    drawEvents(mEventRects, day, startPixel, canvas, startTop)
-                }
+                mMapEventRects
+                        .asSequence()
+                        .forEachIndexed { index, mEventRects ->
+                            val startTop = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * index).toFloat()
+                            if (startTop.inScreenVertical())
+                                drawEvents(mEventRects, day, startPixel, canvas, startTop)
+                        }
                 startPixel += mWidthPerHour
                 hourNumber++
                 i++
@@ -961,6 +973,8 @@ class WeekView : View {
         }
         //endregion
     }
+
+    private fun Float.inScreenVertical() = this < height && this > -mHourHeight
 
     private fun getMaxOverScrollVertical() = mHourHeight * countStaff
 
