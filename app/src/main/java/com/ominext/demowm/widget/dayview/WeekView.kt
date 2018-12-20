@@ -491,9 +491,15 @@ class WeekView : View {
                         if (mHasAllDayEvents && e.x <= mHeaderColumnWidth + mWidthPerHour && !eventRect.event.mAllDay) continue
                         val rectF = eventRect.rectF
                         if (rectF != null && e.x > rectF.left && e.x < rectF.right && e.y > rectF.top && e.y < rectF.bottom) {
-                            Toast.makeText(context, eventRect.event.mName, Toast.LENGTH_SHORT).show()
                             playSoundEffect(SoundEffectConstants.CLICK)
-                            return super.onSingleTapConfirmed(e)
+                            if (eventRect.event.mAllDay && eventRect.event.mStartTime!!.isTheSameDay(mFirstVisibleDay!!)) {
+                                Toast.makeText(context, eventRect.event.mName, Toast.LENGTH_SHORT).show()
+                                return super.onSingleTapConfirmed(e)
+                            }
+                            if (!eventRect.event.mAllDay) {
+                                Toast.makeText(context, eventRect.event.mName, Toast.LENGTH_SHORT).show()
+                                return super.onSingleTapConfirmed(e)
+                            }
                         }
                     }
                 }
