@@ -16,6 +16,10 @@ import android.util.TypedValue
 import android.view.*
 import android.widget.OverScroller
 import android.widget.Toast
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.request.target.SimpleTarget
+import com.bumptech.glide.request.transition.Transition
 import com.ominext.demowm.R
 import com.ominext.demowm.util.TimeUtils
 import com.ominext.demowm.util.ViewUtils
@@ -727,7 +731,9 @@ class WeekView : View {
                 val yText = top + 60F.dp2Px()
                 val xText = 30F.dp2Px()
                 if (i < countStaff) {
-                    canvas.drawBitmap(mBitmapAvatar, 10F.dp2Px(), top, mPaintAvatar)
+                    i.getBitmapByPosition()?.let {
+                        canvas.drawBitmap(it, 10F.dp2Px(), top, mPaintAvatar)
+                    }
 
                     if (i != 0) {
                         val yDelete = top + 3F.dp2Px()
@@ -742,6 +748,39 @@ class WeekView : View {
                 canvas.drawLine(0f, topLine, mHeaderColumnWidth, topLine, mTimeTextPaint)
             }
         }
+    }
+
+    private val mapAvatar = mutableMapOf<Int, Bitmap?>()
+
+    private fun Int.getBitmapByPosition(): Bitmap? {
+        if (mapAvatar[this] == null) {
+            val res = when (this % 8) {
+                0 -> R.drawable.ic_1
+                1 -> R.drawable.ic_2
+                2 -> R.drawable.ic_3
+                3 -> R.drawable.ic_4
+                4 -> R.drawable.ic_5
+                5 -> R.drawable.ic_6
+                6 -> R.drawable.ic_7
+                else -> R.drawable.ic_8
+            }
+
+            Glide.with(context)
+                    .asBitmap()
+                    .load(res)
+                    .apply(
+                            RequestOptions()
+                                    .override(50F.dp2Px().toInt())
+                                    .optionalCenterInside()
+                    )
+                    .into(object : SimpleTarget<Bitmap>() {
+                        override fun onResourceReady(resource: Bitmap?, transition: Transition<in Bitmap>?) {
+                            mapAvatar[this@getBitmapByPosition] = resource
+                            postInvalidate()
+                        }
+                    })
+        }
+        return mapAvatar[this]
     }
 
     /**
