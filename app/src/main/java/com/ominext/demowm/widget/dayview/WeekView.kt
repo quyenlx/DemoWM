@@ -102,10 +102,6 @@ class WeekView : View {
             invalidate()
         }
 
-    private var mMinHourHeight = 0 //no minimum specified (will be dynamic, based on screen)
-//    private var mEffectiveMinHourHeight = mMinHourHeight //compensates for the fact that you can't keep zooming out.
-//    private var mMaxHourHeight = 250
-
     var mFirstDayOfWeek = Calendar.MONDAY
         /**
          * Set the first day of the week. First day of the week is used only when the week view is first
@@ -389,7 +385,7 @@ class WeekView : View {
     var mTitleChangeListener: TitleChangeListener? = null
     var mScrollStateChangeListener: ScrollStateChangeListener? = null
 
-    // Event touch screen
+    //#GestureDetector
     private val mGestureListener = object : GestureDetector.SimpleOnGestureListener() {
 
         override fun onDown(e: MotionEvent): Boolean {
@@ -399,6 +395,8 @@ class WeekView : View {
         }
 
         override fun onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
+            if (mIsZooming)
+                return true
             when (mCurrentScrollDirection) {
                 Direction.NONE -> {
                     // Allow scrolling only in one direction.
@@ -449,6 +447,8 @@ class WeekView : View {
         }
 
         override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+            if (mIsZooming)
+                return true
             if (mCurrentFlingDirection == Direction.LEFT && !mHorizontalFlingEnabled ||
                     mCurrentFlingDirection == Direction.RIGHT && !mHorizontalFlingEnabled ||
                     mCurrentFlingDirection == Direction.VERTICAL && !mVerticalFlingEnabled) {
@@ -503,6 +503,33 @@ class WeekView : View {
         }
     }
 
+    //region #ScaleDetector
+    private var mIsZooming: Boolean = false
+    private var mNewHourWidth = 0F
+    private var mMinHourWidth = 0F
+    private var mMaxHourWidth = 0F
+
+    private var mScaleDetector: ScaleGestureDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.OnScaleGestureListener {
+        override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+            mIsZooming = true
+            goToNearestOrigin()
+            return true
+        }
+
+        override fun onScale(detector: ScaleGestureDetector): Boolean {
+            mNewHourWidth = Math.round(mWidthPerHour * detector.scaleFactor).toFloat()
+            invalidate()
+            return true
+        }
+
+        override fun onScaleEnd(detector: ScaleGestureDetector) {
+            mIsZooming = false
+        }
+
+    })
+    //endregion
+
+
     private var mMapEventRects: MutableList<MutableList<EventRect>> = mutableListOf()
     private var mCurrentPeriodEvents: List<List<WeekViewEvent>>? = null
     private var mFetchedPeriod = -1 // the middle period the calendar has fetched.
@@ -533,9 +560,6 @@ class WeekView : View {
         try {
             mFirstDayOfWeek = a.getInteger(R.styleable.WeekView_firstDayOfWeek, mFirstDayOfWeek)
             mHourHeight = a.getDimensionPixelSize(R.styleable.WeekView_hourHeight, mHourHeight)
-            mMinHourHeight = a.getDimensionPixelSize(R.styleable.WeekView_minHourHeight, mMinHourHeight)
-//            mEffectiveMinHourHeight = mMinHourHeight
-//            mMaxHourHeight = a.getDimensionPixelSize(R.styleable.WeekView_maxHourHeight, mMaxHourHeight)
             mTextSize = a.getDimensionPixelSize(R.styleable.WeekView_textSize, TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, mTextSize.toFloat(), context.resources.displayMetrics).toInt())
             mTextSizeTime = a.getDimensionPixelSize(R.styleable.WeekView_textSizeTime, TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, mTextSizeTime.toFloat(), context.resources.displayMetrics).toInt())
             mHeaderColumnPadding = a.getDimensionPixelSize(R.styleable.WeekView_headerColumnPadding, mHeaderColumnPadding)
@@ -685,13 +709,26 @@ class WeekView : View {
                 ?: 0f
     }
 
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        //region #Init value width : header, hour; height : header
+        mHeaderColumnWidth = mTimeTextWidth + mHeaderColumnPadding * 2
+        mWidthPerHour = width.toFloat() - mHeaderColumnWidth
+        mWidthPerHour /= mNumberOfVisibleDays
+        mHeaderHeight = mHeaderTextHeight + mHeaderRowPadding * 2 - DEFAULT_STROKE_WIDTH / 2
+
+        mMaxHourWidth = (width.toFloat() - mHeaderColumnWidth) / 2
+        mMinHourWidth = mWidthPerHour
+
+        //endregion
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         canvas.drawColor(mBackgroundColor)
         canvas.drawLine(0F, DEFAULT_STROKE_WIDTH / 2, mHeaderColumnWidth + DEFAULT_STROKE_WIDTH, DEFAULT_STROKE_WIDTH / 2, mHeaderBackgroundPaint)
         canvas.drawLine(0F, height - DEFAULT_STROKE_WIDTH / 2, width.toFloat(), height - DEFAULT_STROKE_WIDTH / 2, mHeaderBackgroundPaint)
-
         drawHeaderRowAndEvents(canvas)
         drawTimeColumnAndAxes(canvas)
     }
@@ -790,13 +827,6 @@ class WeekView : View {
      */
     private fun drawHeaderRowAndEvents(canvas: Canvas) {
 
-        //region #Init value width : header, hour; height : header
-        mHeaderColumnWidth = mTimeTextWidth + mHeaderColumnPadding * 2
-        mWidthPerHour = width.toFloat() - mHeaderColumnWidth
-        mWidthPerHour /= mNumberOfVisibleDays
-        mHeaderHeight = mHeaderTextHeight + mHeaderRowPadding * 2 - DEFAULT_STROKE_WIDTH / 2
-        //endregion
-
         //region #FirstDraw
         val today = TimeUtils.today()
         if (mIsFirstDraw) {
@@ -806,6 +836,19 @@ class WeekView : View {
                 val difference = today.get(Calendar.DAY_OF_WEEK) - mFirstDayOfWeek
                 mCurrentOrigin.x += mWidthPerHour * difference
             }
+        }
+        //endregion
+
+        //region #Zoom
+        if (mNewHourWidth > 0) {
+            if (mNewHourWidth < mMinHourWidth)
+                mNewHourWidth = mMinHourWidth
+            else if (mNewHourWidth > mMaxHourWidth)
+                mNewHourWidth = mMaxHourWidth
+
+            mCurrentOrigin.x = mCurrentOrigin.x / mWidthPerHour * mNewHourWidth
+            mWidthPerHour = mNewHourWidth
+            mNewHourWidth = -1F
         }
         //endregion
 
@@ -1428,18 +1471,13 @@ class WeekView : View {
         }
     }
 
-    /////////////////////////////////////////////////////////////////
-    //
-    //      Functions related to scrolling.
-    //
-    /////////////////////////////////////////////////////////////////
-
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        mScaleDetector.onTouchEvent(event)
+
         val result = mGestureDetector.onTouchEvent(event)
 
-        // Check after call of mGestureDetector, so mCurrentFlingDirection and mCurrentScrollDirection are set.
-        if (event.action == MotionEvent.ACTION_UP && mCurrentFlingDirection == Direction.NONE) {
+        if (event.action == MotionEvent.ACTION_UP && !mIsZooming && mCurrentFlingDirection == Direction.NONE) {
             if (mCurrentScrollDirection == Direction.RIGHT || mCurrentScrollDirection == Direction.LEFT) {
                 goToNearestOrigin()
             } else {
