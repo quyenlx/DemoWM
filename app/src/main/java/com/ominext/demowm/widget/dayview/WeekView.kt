@@ -75,11 +75,8 @@ class WeekView : View {
     private val mHeaderColumnBackgroundPaint: Paint by lazy { Paint() }
     private var mCurrentFlingDirection = Direction.NONE
 
-    private val mBitmapAvatar = ViewUtils.getBitmapFromXml(context, R.mipmap.ic_launcher, 50f.dp2Px().toInt(), 50f.dp2Px().toInt())
-    private val mBitmapDelete = ViewUtils.getBitmapFromXml(context, R.drawable.ic_cancel, 22F.dp2Px().toInt(), 22F.dp2Px().toInt())
-    private val mPaintAvatar = Paint()
 
-    private val mAllDayText = "AllDay"
+    private val mAllDayText = "終日"
     private val mAllDayTextPaint: TextPaint by lazy { TextPaint(Paint.ANTI_ALIAS_FLAG) }
     private var mAllDayTextWidth: Float = 0F
     private var mAllDayTextHeight: Float = 0F
@@ -546,11 +543,36 @@ class WeekView : View {
     private var mAllDayEventNumArray: IntArray = IntArray(BUFFER_HOUR + mNumberOfVisibleDays * 2)
     private var mOriginalAllDayEvent: BooleanArray = BooleanArray(BUFFER_HOUR + mNumberOfVisibleDays * 2)
 
+    //region Row Header
     private var countStaff = 0
         set(value) {
             field = value
             postInvalidate()
         }
+
+    //avatar staff
+    private val mSizeAvatarStaff = 50F.dp2Px()
+    private val mMarginLeftAvatarStaff = 10F.dp2Px()
+    private val mMarginTopAvatarStaff = 2F.dp2Px()
+    private val mPaintAvatar: Paint by lazy {
+        return@lazy Paint(Paint.ANTI_ALIAS_FLAG)
+    }
+    //icon delete
+    private val mBitmapDelete = ViewUtils.getBitmapFromXml(context, R.drawable.ic_cancel, 22F.dp2Px().toInt(), 22F.dp2Px().toInt())
+    private val mMarginTopIconDelete = 3F.dp2Px()
+    //name staff
+    private val mSizeTextStaff = 14F.dp2Px()
+    private val mMarginBottomTextStaff = 2F.dp2Px()
+    private val mColorTextStaff = Color.BLACK
+    private val mMarginLeftTextStaff = 10F.dp2Px()
+    private val mPaintTextStaff: Paint by lazy {
+        return@lazy Paint(Paint.ANTI_ALIAS_FLAG)
+                .apply {
+                    this.textSize = mSizeTextStaff
+                    this.color = mColorTextStaff
+                }
+    }
+    //endregion
 
     constructor (context: Context) : this(context, null)
 
@@ -736,7 +758,7 @@ class WeekView : View {
         canvas.drawLine(0F, DEFAULT_STROKE_WIDTH / 2, mHeaderColumnWidth + DEFAULT_STROKE_WIDTH, DEFAULT_STROKE_WIDTH / 2, mHeaderBackgroundPaint)
         canvas.drawLine(0F, height - DEFAULT_STROKE_WIDTH / 2, width.toFloat(), height - DEFAULT_STROKE_WIDTH / 2, mHeaderBackgroundPaint)
         drawHeaderRowAndEvents(canvas)
-        drawTimeColumnAndAxes(canvas)
+        drawStaffColumnAndAxes(canvas)
     }
 
     /**
@@ -752,12 +774,20 @@ class WeekView : View {
 
     private val listRectBtnCancel = mutableMapOf<Int, Rect>()
 
+    private val mPaintCircle: Paint by lazy {
+        return@lazy Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.strokeWidth = 1F.dp2Px()
+            this.style = Paint.Style.STROKE
+            this.color = Color.RED
+        }
+    }
+
     /**
      * Draws the time column and all the axes/separators.
      *
      * @param canvas
      */
-    private fun drawTimeColumnAndAxes(canvas: Canvas) {
+    private fun drawStaffColumnAndAxes(canvas: Canvas) {
         // Draw the background color for the header column.
         canvas.drawRect(0f, mHeaderHeight, mHeaderColumnWidth, height.toFloat(), mHeaderColumnBackgroundPaint)
 
@@ -767,26 +797,35 @@ class WeekView : View {
         val totalLine = if (countStaff < 10) 10 else countStaff
 
         for (i in 0 until totalLine) {
-            val top = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * i).toFloat() + 2F.dp2Px()
+            val top = mHeaderHeight + mCurrentOrigin.y + mHourHeight * i + mMarginTopAvatarStaff
             val topLine = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * (i + 1)).toFloat() + mTimeTextHeight / 2 + mHeaderMarginBottom
-
             if (top.inScreenVertical()) {
-                val yText = top + 60F.dp2Px()
-                val xText = 30F.dp2Px()
                 if (i < countStaff) {
+                    //draw avatar staff
                     i.getBitmapByPosition()?.let {
-                        canvas.drawBitmap(it, 10F.dp2Px(), top, mPaintAvatar)
+                        canvas.drawBitmap(it, mMarginLeftAvatarStaff, top, mPaintAvatar)
                     }
+                    val radius = mSizeAvatarStaff / 2
+                    val cX = mMarginLeftAvatarStaff + radius
+                    val cY = top + radius
 
+                    canvas.drawCircle(cX, cY, radius, mPaintCircle)
+
+                    //draw icon delete
                     if (i != 0) {
-                        val yDelete = top + 3F.dp2Px()
+                        val yDelete = top + mMarginTopIconDelete
                         val xDelete = mHeaderColumnWidth - mBitmapDelete?.width!!
                         val rect = Rect(xDelete.toInt(), yDelete.toInt(), xDelete.toInt() + mBitmapDelete.width, yDelete.toInt() + mBitmapDelete.height)
                         listRectBtnCancel[i] = rect
                         canvas.drawBitmap(mBitmapDelete, xDelete, yDelete, mPaintAvatar)
                     }
 
-                    canvas.drawText("A$i", xText, yText, mTimeTextPaint)
+                    //draw text staff
+                    val marginTop = mMarginTopAvatarStaff + mSizeAvatarStaff
+                    val offset = mHourHeight - marginTop
+                    val yText = top + marginTop + offset / 2
+                    val xText = mMarginLeftTextStaff
+                    canvas.drawText("田中太郎", xText, yText, mPaintTextStaff)
                 }
                 canvas.drawLine(0f, topLine, mHeaderColumnWidth, topLine, mTimeTextPaint)
             }
@@ -798,7 +837,7 @@ class WeekView : View {
     private fun Int.getBitmapByPosition(): Bitmap? {
         if (mapAvatar[this] == null) {
             val res = when (this % 8) {
-                0 -> R.drawable.ic_1
+                0 -> R.mipmap.ic_launcher
                 1 -> R.drawable.ic_2
                 2 -> R.drawable.ic_3
                 3 -> R.drawable.ic_4
@@ -813,8 +852,8 @@ class WeekView : View {
                     .load(res)
                     .apply(
                             RequestOptions()
-                                    .override(50F.dp2Px().toInt())
-                                    .optionalCenterInside()
+                                    .override(mSizeAvatarStaff.toInt())
+                                    .circleCrop()
                     )
                     .into(object : SimpleTarget<Bitmap>() {
                         override fun onResourceReady(resource: Bitmap?, transition: Transition<in Bitmap>?) {
@@ -1006,7 +1045,7 @@ class WeekView : View {
         startPixel = if (mHasAllDayEvents) {
             mHeaderTextPaint.typeface = Typeface.create(mHeaderTextPaint.typeface, Typeface.NORMAL)
             mHeaderTextPaint.textSize = mTextSizeTime.toFloat()
-            canvas.drawText("AllDay", mHeaderColumnWidth + mWidthPerHour / 2, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint)
+            canvas.drawText("終日", mHeaderColumnWidth + mWidthPerHour / 2, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint)
             canvas.clipRect(mHeaderColumnWidth + DEFAULT_STROKE_WIDTH + mWidthPerHour, 0f, width.toFloat(), mHeaderHeight, Region.Op.REPLACE)
             startFromPixel + mWidthPerHour
         } else {
