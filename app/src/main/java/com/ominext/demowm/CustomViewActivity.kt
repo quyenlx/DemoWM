@@ -48,12 +48,12 @@ class CustomViewActivity : AppCompatActivity(), MonthLoader.MonthChangeListener,
             return@map (0 until 20).map { eventIndex ->
                 val start = eventIndex + random.nextInt(max - min + 1) + min
                 val startTime = (calendar.clone() as Calendar).apply {
-                    add(Calendar.DAY_OF_WEEK, eventIndex / 2)
+                    add(Calendar.DAY_OF_WEEK, -eventIndex / 2)
                     set(Calendar.HOUR_OF_DAY, start)
                 }
                 val end = if (start < 24) start + random.nextInt(max - min + 1) + min else 23
                 val endTime = (calendar.clone() as Calendar).apply {
-                    add(Calendar.DAY_OF_WEEK, eventIndex / 2)
+                    add(Calendar.DAY_OF_WEEK, -eventIndex / 2)
                     set(Calendar.HOUR_OF_DAY, end)
                 }
                 return@map WeekViewEvent().apply {

@@ -35,7 +35,7 @@ class WeekView : View {
 
     companion object {
         const val DAY_PAST_ALPHA = 100
-        const val PAST_ALPHA = 160
+        const val PAST_ALPHA = 100
         const val NORMAL_ALPHA = 255
         const val STROKE_HIGHLIGHT_WIDTH = 4F
         const val DEFAULT_STROKE_WIDTH = 2F
@@ -1081,13 +1081,13 @@ class WeekView : View {
             if (left > right || startTop > height || bottom <= 0) continue
             mEventRects[i].rectF = RectF(left, top, right, bottom)
 
+            mEventBackgroundPaint.alpha = NORMAL_ALPHA
+            mEventBackgroundPaint.color = event.mColor
             if (eventOriginal.mEndTime!!.before(TimeUtils.today())) {
                 mEventBackgroundPaint.alpha = PAST_ALPHA
             }
-            mEventBackgroundPaint.color = event.mColor
             canvas.drawRoundRect(mEventRects[i].rectF, mEventCornerRadius.toFloat(), mEventCornerRadius.toFloat(), mEventBackgroundPaint)
             drawEventTitle(mEventRects[i], canvas, top, left)
-            mEventBackgroundPaint.alpha = NORMAL_ALPHA
         }
     }
 
@@ -1110,16 +1110,20 @@ class WeekView : View {
             val left = startFromPixel + event.minuteStart * mWidthPerHour / 60
             val right = left + mWidthPerHour * hoursBetween - mEventSeparatorWidth
             mEventRects[i].rectF = null
+
             if (left > right || startTop > height || bottom <= 0) continue
+            if (right < mHeaderColumnWidth - mWidthPerHour) continue
+            if (left > width + mWidthPerHour) continue
+
             mEventRects[i].rectF = RectF(left, top, right, bottom)
 
+            mEventBackgroundPaint.alpha = NORMAL_ALPHA
+            mEventBackgroundPaint.color = event.mColor
             if (eventOriginal.mEndTime!!.timeInMillis < System.currentTimeMillis()) {
                 mEventBackgroundPaint.alpha = PAST_ALPHA
             }
-            mEventBackgroundPaint.color = event.mColor
             canvas.drawRoundRect(mEventRects[i].rectF, mEventCornerRadius.toFloat(), mEventCornerRadius.toFloat(), mEventBackgroundPaint)
             drawEventTitle(mEventRects[i], canvas, top, left)
-            mEventBackgroundPaint.alpha = NORMAL_ALPHA
         }
     }
 
