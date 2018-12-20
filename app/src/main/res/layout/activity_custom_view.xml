@@ -24,7 +24,7 @@
         app:headerRowBackgroundColor="#cccccc"
         app:headerRowPadding="8dp"
         app:horizontalFlingEnabled="true"
-        app:hourHeight="70dp"
+        app:hourHeight="80dp"
         app:hourSeparatorColor="#cccccc"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
