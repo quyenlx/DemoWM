@@ -21,7 +21,7 @@
         <attr name="tlcp_progress2" format="integer" />
     </declare-styleable>
 
-    <declare-styleable name="WeekView">
+    <declare-styleable name="DayView">
         <attr name="firstDayOfWeek" format="enum">
             <enum name="sunday" value="1" />
             <enum name="monday" value="2" />
@@ -32,46 +32,21 @@
             <enum name="saturday" value="7" />
         </attr>
         <attr name="hourHeight" format="dimension" />
-        <attr name="minHourHeight" format="dimension" />
-        <attr name="maxHourHeight" format="dimension" />
-        <attr name="textSize" format="dimension" />
-        <attr name="textSizeTime" format="dimension" />
         <attr name="eventTextSize" format="dimension" />
-        <attr name="headerColumnPadding" format="dimension" />
-        <attr name="headerRowPadding" format="dimension" />
-        <attr name="headerColumnTextColorTime" format="color" />
         <attr name="headerColumnTextColorSunday" format="color" />
         <attr name="headerColumnTextColorSaturday" format="color" />
-        <attr name="headerColumnTextColor" format="color" />
+        <attr name="headerColumnTextColorWeek" format="color" />
+        <attr name="lineColor" format="color" />
+        <attr name="highlightLineColor" format="color" />
         <attr name="noOfVisibleDays" format="integer" />
         <attr name="showFirstDayOfWeekFirst" format="boolean" />
-        <attr name="headerRowBackgroundColor" format="color" />
-        <attr name="dayBackgroundColor" format="color" />
-        <attr name="hourSeparatorColor" format="color" />
         <attr name="todayBackgroundColor" format="color" />
-        <attr name="todayHeaderTextColor" format="color" />
-        <attr name="hourSeparatorHeight" format="dimension" />
         <attr name="eventTextColor" format="color" />
-        <attr name="eventPadding" format="dimension" />
-        <attr name="headerColumnBackground" format="color" />
-        <attr name="overlappingEventGap" format="dimension" />
-        <attr name="eventMarginVertical" format="dimension" />
         <attr name="xScrollingSpeed" format="float" />
         <attr name="eventCornerRadius" format="dimension" />
-        <attr name="showDistinctPastFutureColor" format="boolean" />
-        <attr name="showDistinctWeekendColor" format="boolean" />
-        <attr name="futureBackgroundColor" format="color" />
-        <attr name="pastBackgroundColor" format="color" />
-        <attr name="futureWeekendBackgroundColor" format="color" />
-        <attr name="pastWeekendBackgroundColor" format="color" />
-        <attr name="showNowLine" format="boolean" />
-        <attr name="nowLineColor" format="color" />
-        <attr name="nowLineThickness" format="dimension" />
         <attr name="horizontalFlingEnabled" format="boolean" />
         <attr name="verticalFlingEnabled" format="boolean" />
-        <attr name="allDayEventHeight" format="dimension" />
         <attr name="scrollDuration" format="integer" />
-
-        <attr name="MessageInput" format="reference" />
+        <attr name="eventPadding" format="dimension" />
     </declare-styleable>
 </resources>

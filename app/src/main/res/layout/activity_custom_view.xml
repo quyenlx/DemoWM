@@ -6,33 +6,25 @@
     android:layout_height="match_parent"
     tools:context="com.ominext.demowm.CustomViewActivity">
 
-    <com.ominext.demowm.widget.dayview.WeekView
+    <com.ominext.demowm.widget.dayview.DayView
         android:id="@+id/weekView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:dayBackgroundColor="#ffffff"
         app:eventCornerRadius="1.75dp"
         app:eventPadding="2.5dp"
         app:eventTextColor="@android:color/white"
         app:eventTextSize="14sp"
-        app:headerColumnBackground="#ffffffff"
-        app:headerColumnPadding="40dp"
-        app:headerColumnTextColor="#3B3732"
         app:headerColumnTextColorSaturday="#4991DC"
         app:headerColumnTextColorSunday="#D11D29"
-        app:headerColumnTextColorTime="#8F8F8F"
-        app:headerRowBackgroundColor="#cccccc"
-        app:headerRowPadding="8dp"
+        app:headerColumnTextColorWeek="#000000"
+        app:highlightLineColor="#c7666666"
         app:horizontalFlingEnabled="true"
         app:hourHeight="80dp"
-        app:hourSeparatorColor="#cccccc"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
+        app:lineColor="#cccccc"
         app:noOfVisibleDays="5"
-        app:nowLineColor="#F18D00"
-        app:showDistinctWeekendColor="true"
-        app:showNowLine="true"
         app:todayBackgroundColor="#20ffff00" />
 
 </android.support.constraint.ConstraintLayout>

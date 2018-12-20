@@ -11,7 +11,6 @@ import android.support.v4.view.ViewCompat
 import android.support.v4.view.animation.FastOutLinearInInterpolator
 import android.text.*
 import android.util.AttributeSet
-import android.util.TypedValue
 import android.view.*
 import android.widget.OverScroller
 import android.widget.Toast
@@ -26,7 +25,7 @@ import com.ominext.demowm.util.isTheSameDay
 import com.ominext.demowm.util.isTheSameHour
 import java.util.*
 
-class WeekView : View {
+class DayView : View {
 
     private enum class Direction {
         NONE, LEFT, RIGHT, VERTICAL
@@ -101,12 +100,7 @@ class WeekView : View {
             field = value
             postInvalidate()
         }
-    var mHourHeight = 50
-        set(value) {
-            field = value
-            invalidate()
-        }
-
+    private var mHourHeight = 50F.dp2Px().toInt()
     private var mHeaderTextHeight: Float = 0F
     private var mHeaderRowPadding = 10F.dp2Px()
     private var mHeaderColumnWidth: Float = 120F.dp2Px()
@@ -221,7 +215,7 @@ class WeekView : View {
     }
 
     //TextEvent
-    var mTextSizeEvent = 9
+    var mTextSizeEvent = 9F.dp2Px().toInt()
         set(value) {
             field = value
             mEventTextPaint.textSize = field.toFloat()
@@ -246,8 +240,8 @@ class WeekView : View {
 
 
     //Line
-    private val mColorLine = Color.BLUE
-    private val mColorLineLight = Color.RED
+    private var mColorLine = Color.BLUE
+    private var mColorLineLight = Color.RED
     private val mPaintLine: Paint by lazy {
         return@lazy Paint().apply {
             this.color = mColorLine
@@ -323,12 +317,12 @@ class WeekView : View {
             when (mCurrentScrollDirection) {
                 Direction.LEFT, Direction.RIGHT -> {
                     mCurrentOrigin.x -= distanceX * mXScrollingSpeed
-                    ViewCompat.postInvalidateOnAnimation(this@WeekView)
+                    ViewCompat.postInvalidateOnAnimation(this@DayView)
                 }
                 Direction.VERTICAL -> {
                     if (e1.y > mHeaderHeight) {
                         mCurrentOrigin.y -= distanceY
-                        ViewCompat.postInvalidateOnAnimation(this@WeekView)
+                        ViewCompat.postInvalidateOnAnimation(this@DayView)
                     }
                 }
                 else -> {
@@ -353,11 +347,11 @@ class WeekView : View {
             when (mCurrentFlingDirection) {
                 Direction.LEFT, Direction.RIGHT -> {
                     mScroller?.fling(mCurrentOrigin.x.toInt(), mCurrentOrigin.y.toInt(), (velocityX * mXScrollingSpeed).toInt(), 0, Integer.MIN_VALUE, Integer.MAX_VALUE, -(getMaxOverScrollVertical() + mHeaderHeight - height).toInt(), 0)
-                    ViewCompat.postInvalidateOnAnimation(this@WeekView)
+                    ViewCompat.postInvalidateOnAnimation(this@DayView)
                 }
                 Direction.VERTICAL -> if (e1.y > mHeaderHeight) {
                     mScroller?.fling(mCurrentOrigin.x.toInt(), mCurrentOrigin.y.toInt(), 0, velocityY.toInt(), Integer.MIN_VALUE, Integer.MAX_VALUE, -(getMaxOverScrollVertical() + mHeaderHeight - height).toInt(), 0)
-                    ViewCompat.postInvalidateOnAnimation(this@WeekView)
+                    ViewCompat.postInvalidateOnAnimation(this@DayView)
                 }
                 else -> {
                     //do nothing
@@ -427,23 +421,26 @@ class WeekView : View {
 
     constructor (context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
         mContext = context
-        val a = context.theme.obtainStyledAttributes(attrs, R.styleable.WeekView, 0, 0)
+        val a = context.theme.obtainStyledAttributes(attrs, R.styleable.DayView, 0, 0)
         try {
-            mFirstDayOfWeek = a.getInteger(R.styleable.WeekView_firstDayOfWeek, mFirstDayOfWeek)
-            mHourHeight = a.getDimensionPixelSize(R.styleable.WeekView_hourHeight, mHourHeight)
-            mTextColorSunday = a.getColor(R.styleable.WeekView_headerColumnTextColorSunday, mTextColorSunday)
-            mTextColorSaturday = a.getColor(R.styleable.WeekView_headerColumnTextColorSaturday, mTextColorSaturday)
-            mNumberOfVisibleDays = a.getInteger(R.styleable.WeekView_noOfVisibleDays, mNumberOfVisibleDays)
-            mShowFirstDayOfWeekFirst = a.getBoolean(R.styleable.WeekView_showFirstDayOfWeekFirst, mShowFirstDayOfWeekFirst)
-            mColorBackgroundToday = a.getColor(R.styleable.WeekView_todayBackgroundColor, mColorBackgroundToday)
-            mTextSizeEvent = a.getDimensionPixelSize(R.styleable.WeekView_eventTextSize, TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, mTextSizeEvent.toFloat(), context.resources.displayMetrics).toInt())
-            mTextColorEvent = a.getColor(R.styleable.WeekView_eventTextColor, mTextColorEvent)
-            mEventPadding = a.getDimensionPixelSize(R.styleable.WeekView_eventPadding, mEventPadding)
-            mXScrollingSpeed = a.getFloat(R.styleable.WeekView_xScrollingSpeed, mXScrollingSpeed)
-            mEventCornerRadius = a.getDimensionPixelSize(R.styleable.WeekView_eventCornerRadius, mEventCornerRadius)
-            mHorizontalFlingEnabled = a.getBoolean(R.styleable.WeekView_horizontalFlingEnabled, mHorizontalFlingEnabled)
-            mVerticalFlingEnabled = a.getBoolean(R.styleable.WeekView_verticalFlingEnabled, mVerticalFlingEnabled)
-            mScrollDuration = a.getInt(R.styleable.WeekView_scrollDuration, mScrollDuration)
+            mFirstDayOfWeek = a.getInteger(R.styleable.DayView_firstDayOfWeek, mFirstDayOfWeek)
+            mHourHeight = a.getDimensionPixelSize(R.styleable.DayView_hourHeight, mHourHeight)
+            mTextColorSunday = a.getColor(R.styleable.DayView_headerColumnTextColorSunday, mTextColorSunday)
+            mTextColorSaturday = a.getColor(R.styleable.DayView_headerColumnTextColorSaturday, mTextColorSaturday)
+            mTextColorWeek = a.getColor(R.styleable.DayView_headerColumnTextColorWeek, mTextColorSaturday)
+            mNumberOfVisibleDays = a.getInteger(R.styleable.DayView_noOfVisibleDays, mNumberOfVisibleDays)
+            mShowFirstDayOfWeekFirst = a.getBoolean(R.styleable.DayView_showFirstDayOfWeekFirst, mShowFirstDayOfWeekFirst)
+            mColorBackgroundToday = a.getColor(R.styleable.DayView_todayBackgroundColor, mColorBackgroundToday)
+            mTextSizeEvent = a.getDimensionPixelSize(R.styleable.DayView_eventTextSize, mTextSizeEvent)
+            mTextColorEvent = a.getColor(R.styleable.DayView_eventTextColor, mTextColorEvent)
+            mEventPadding = a.getDimensionPixelSize(R.styleable.DayView_eventPadding, mEventPadding)
+            mXScrollingSpeed = a.getFloat(R.styleable.DayView_xScrollingSpeed, mXScrollingSpeed)
+            mEventCornerRadius = a.getDimensionPixelSize(R.styleable.DayView_eventCornerRadius, mEventCornerRadius)
+            mHorizontalFlingEnabled = a.getBoolean(R.styleable.DayView_horizontalFlingEnabled, mHorizontalFlingEnabled)
+            mVerticalFlingEnabled = a.getBoolean(R.styleable.DayView_verticalFlingEnabled, mVerticalFlingEnabled)
+            mScrollDuration = a.getInt(R.styleable.DayView_scrollDuration, mScrollDuration)
+            mColorLine = a.getInt(R.styleable.DayView_lineColor, mColorLine)
+            mColorLineLight = a.getInt(R.styleable.DayView_highlightLineColor, mColorLineLight)
         } finally {
             a.recycle()
         }
@@ -1040,7 +1037,7 @@ class WeekView : View {
             mScroller?.forceFinished(true)
             // Snap to date.
             mScroller?.startScroll(mCurrentOrigin.x.toInt(), mCurrentOrigin.y.toInt(), -nearestOrigin, 0, (Math.abs(nearestOrigin) / mWidthPerHour * mScrollDuration).toInt())
-            ViewCompat.postInvalidateOnAnimation(this@WeekView)
+            ViewCompat.postInvalidateOnAnimation(this@DayView)
         }
         // Reset scrolling and fling direction.
         mCurrentFlingDirection = Direction.NONE
@@ -1240,7 +1237,7 @@ class WeekView : View {
     interface EventTouchListener {
 
         /**
-         * Triggered when touched on WeekView
+         * Triggered when touched on DayView
          */
         fun onDown()
     }
