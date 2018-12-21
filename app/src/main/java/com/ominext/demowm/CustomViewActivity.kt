@@ -22,6 +22,11 @@ class CustomViewActivity : AppCompatActivity(), MonthLoader.MonthChangeListener,
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_custom_view)
         weekView.mWeekViewLoader = MonthLoader(this)
+
+        btnToDay.setOnClickListener {
+
+            weekView.goToDate(Calendar.getInstance())
+        }
     }
 
     override fun onMonthChange(newYear: Int, newMonth: Int): List<List<WeekViewEvent>> {

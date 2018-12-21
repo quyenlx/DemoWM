@@ -10,6 +10,7 @@ import android.support.v4.view.GestureDetectorCompat
 import android.support.v4.view.ViewCompat
 import android.support.v4.view.animation.FastOutLinearInInterpolator
 import android.text.*
+import android.text.format.DateUtils
 import android.util.AttributeSet
 import android.view.*
 import android.widget.OverScroller
@@ -215,26 +216,15 @@ class DayView : View {
     }
 
     //TextEvent
-    var mTextSizeEvent = 9F.dp2Px().toInt()
-        set(value) {
-            field = value
-            mEventTextPaint.textSize = field.toFloat()
-            invalidate()
-        }
-
+    var mTextSizeEvent = 9F.dp2Px()
     var mTextColorEvent = Color.BLACK
-        set(value) {
-            field = value
-            mEventTextPaint.color = field
-            invalidate()
-        }
 
     private val mEventTextPaint: TextPaint by lazy {
         return@lazy TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.LINEAR_TEXT_FLAG)
                 .apply {
+                    textSize = mTextSizeEvent
                     style = Paint.Style.FILL
                     color = mTextColorEvent
-                    textSize = mTextSizeEvent.toFloat()
                 }
     }
 
@@ -431,7 +421,6 @@ class DayView : View {
             mNumberOfVisibleDays = a.getInteger(R.styleable.DayView_noOfVisibleDays, mNumberOfVisibleDays)
             mShowFirstDayOfWeekFirst = a.getBoolean(R.styleable.DayView_showFirstDayOfWeekFirst, mShowFirstDayOfWeekFirst)
             mColorBackgroundToday = a.getColor(R.styleable.DayView_todayBackgroundColor, mColorBackgroundToday)
-            mTextSizeEvent = a.getDimensionPixelSize(R.styleable.DayView_eventTextSize, mTextSizeEvent)
             mTextColorEvent = a.getColor(R.styleable.DayView_eventTextColor, mTextColorEvent)
             mEventPadding = a.getDimensionPixelSize(R.styleable.DayView_eventPadding, mEventPadding)
             mXScrollingSpeed = a.getFloat(R.styleable.DayView_xScrollingSpeed, mXScrollingSpeed)
@@ -517,10 +506,6 @@ class DayView : View {
         if (mIsFirstDraw) {
             mIsFirstDraw = false
             mInitListener?.onViewCreated()
-            if (mNumberOfVisibleDays >= 7 && today.get(Calendar.DAY_OF_WEEK) != mFirstDayOfWeek && mShowFirstDayOfWeekFirst) {
-                val difference = today.get(Calendar.DAY_OF_WEEK) - mFirstDayOfWeek
-                mCurrentOrigin.x += mWidthPerHour * difference
-            }
         }
         //endregion
 
@@ -1117,8 +1102,33 @@ class DayView : View {
 
     fun notifyDataSetChanged() {
         mRefreshEvents = true
+        postInvalidate()
+    }
+
+    fun goToDate(calendar: Calendar) {
+        mScroller?.forceFinished(true)
+        mCurrentFlingDirection = Direction.NONE
+        mCurrentScrollDirection = mCurrentFlingDirection
+
+        calendar.apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        mRefreshEvents = true
+
+        val today = TimeUtils.today()
+
+        val day = DateUtils.DAY_IN_MILLIS
+        val dateInMillis = calendar.timeInMillis + calendar.timeZone.getOffset(calendar.timeInMillis)
+        val todayInMillis = today.timeInMillis + today.timeZone.getOffset(today.timeInMillis)
+        val hourDifference = (dateInMillis - todayInMillis) * 24 / day
+        mCurrentOrigin.x = -hourDifference * mWidthPerHour
         invalidate()
     }
+
 
     //--------------------------------------Override------------------------------------------------
 
@@ -1190,6 +1200,10 @@ class DayView : View {
         }
     }
 
+    override fun invalidate() {
+        super.invalidate()
+        mAreDimensionsInvalid = true
+    }
     //--------------------------------------Extension-----------------------------------------------
 
     private fun Calendar.zeroSECONDAndMILLSECOND(): Long {
