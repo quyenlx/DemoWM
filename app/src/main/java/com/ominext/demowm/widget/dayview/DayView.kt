@@ -144,7 +144,7 @@ class DayView : View {
     }
 
     //avatar staff
-    private val mSizeAvatarStaff = 50F.dp2Px()
+    private val mSizeAvatarStaff = 48F.dp2Px()
     private val mMarginLeftAvatarStaff = 10F.dp2Px()
     private val mMarginTopAvatarStaff = 2F.dp2Px()
     private val mPaintAvatar: Paint by lazy {
@@ -153,6 +153,7 @@ class DayView : View {
 
     //icon delete
     private val mBitmapDelete = ViewUtils.getBitmapFromXml(context, R.drawable.ic_cancel, 22F.dp2Px().toInt(), 22F.dp2Px().toInt())
+    private val mBitmapUserPlaceHolder = ViewUtils.getBitmapFromXml(context, R.drawable.thumb_user, mSizeAvatarStaff.toInt(), mSizeAvatarStaff.toInt())
     private val mMarginTopIconDelete = 5F.dp2Px()
 
     //name staff
@@ -469,14 +470,21 @@ class DayView : View {
             if (top.inScreenVertical()) {
                 if (i < countStaff) {
                     //draw avatar staff
-                    i.getBitmapByPosition()?.let {
-                        canvas.drawBitmap(it, mMarginLeftAvatarStaff, top + mMarginTopAvatarStaff, mPaintAvatar)
-                    }
                     val radius = mSizeAvatarStaff / 2
                     val cX = mMarginLeftAvatarStaff + radius
                     val cY = top + mMarginTopAvatarStaff + radius
 
+                    canvas.save()
+                    val path = Path()
+                    path.addCircle(cX, cY, radius, Path.Direction.CCW)
+                    canvas.clipPath(path)
+                    canvas.drawBitmap(mBitmapUserPlaceHolder, mMarginLeftAvatarStaff, top + mMarginTopAvatarStaff, mPaintAvatar)
+                    canvas.restore()
                     canvas.drawCircle(cX, cY, radius, mPaintCircle)
+
+                    i.getBitmapByPosition()?.let {
+                        canvas.drawBitmap(it, mMarginLeftAvatarStaff, top + mMarginTopAvatarStaff, mPaintAvatar)
+                    }
 
                     //draw icon delete
                     if (i != 0) {
