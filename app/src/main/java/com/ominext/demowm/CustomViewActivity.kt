@@ -53,7 +53,7 @@ class CustomViewActivity : AppCompatActivity(), MonthLoader.MonthChangeListener,
                     this.mStartTime = startTime
                     this.mEndTime = endTime
                     this.mColor = color
-                    this.mAllDay = memberIndex % 5 == eventIndex
+                    this.mAllDay = false
                 }
             }
         }

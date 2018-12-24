@@ -555,9 +555,15 @@ class DayView : View {
         //endregion
 
         //region #Draw Date Display
-        mFirstVisibleDay = today.clone() as Calendar
+        mFirstVisibleDay = (today.clone() as Calendar).apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+        }
+
         if (leftHoursWithGaps < 0) {
-            mFirstVisibleDay!!.add(Calendar.DATE, leftHoursWithGaps / 25 - 1)
+            val tmp = leftHoursWithGaps + if (leftHoursWithGaps % 24 == 0) 1 else 0
+            mFirstVisibleDay!!.add(Calendar.DATE, tmp / 24 - 1)
         } else {
             mFirstVisibleDay!!.add(Calendar.DATE, leftHoursWithGaps / 24)
         }
@@ -1152,6 +1158,7 @@ class DayView : View {
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        canvas.drawColor(Color.parseColor("#ffffff"))
         drawHeaderRowAndEvents(canvas)
         drawStaffColumnAndAxes(canvas)
     }
