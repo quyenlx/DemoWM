@@ -980,6 +980,9 @@ class DayView : View {
     }
 
     private fun isEventsCollide(event1: WeekViewEvent, event2: WeekViewEvent): Boolean {
+        if (event1.mAllDay && event2.mAllDay) {
+            return event1.mStartTime!!.isTheSameDay(event2.mStartTime!!)
+        }
         val start1 = event1.mStartTime?.zeroSECONDAndMILLSECOND()
         val end1 = event1.mEndTime?.zeroSECONDAndMILLSECOND()
         val start2 = event2.mStartTime?.zeroSECONDAndMILLSECOND()
