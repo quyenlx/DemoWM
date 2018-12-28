@@ -1167,11 +1167,26 @@ class DayView : View {
         //endregion
     }
 
+    val mPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.drawColor(Color.parseColor("#ffffff"))
         drawHeaderRowAndEvents(canvas)
         drawStaffColumnAndAxes(canvas)
+
+
+//        mPaint.isAntiAlias = true
+//        mPaint.color = Color.WHITE
+//        mPaint.style = Paint.Style.FILL
+//        val rectWidth = 100.0f.dp2Px()
+//
+//        val circularPath = Path()
+//        circularPath.addCircle(width / 2.0f, rectWidth / 2.0f, rectWidth / 3.0f, Path.Direction.CCW)
+//        canvas.clipPath(circularPath, Region.Op.REPLACE)
+//
+//        mPaint.color = Color.BLUE;
+//        canvas.drawRect((width - rectWidth) / 2.0f, 0.0f, ((width - rectWidth) / 2.0f) + rectWidth, rectWidth, mPaint)
     }
 
     @SuppressLint("ClickableViewAccessibility")
