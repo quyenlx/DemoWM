@@ -552,10 +552,10 @@ class DayView : View {
             val x = mHeaderColumnWidth
             canvas.drawLine(x, 0F, x, height.toFloat(), mPaintHour)
         }
-        run {
-            val y = height - DEFAULT_STROKE_WIDTH / 2
-            canvas.drawLine(0F, y, mHeaderColumnWidth, y, mPaintHour)
-        }
+//        run {
+//            val y = height - DEFAULT_STROKE_WIDTH / 2
+//            canvas.drawLine(0F, y, mHeaderColumnWidth, y, mPaintHour)
+//        }
         run {
             val y: Float = mHeaderHeight
             canvas.drawLine(mHeaderColumnWidth - DEFAULT_STROKE_WIDTH, y, width.toFloat(), y, mPaintHour)
