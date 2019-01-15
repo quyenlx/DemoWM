@@ -5,13 +5,14 @@ package com.ominext.demowm.widget.dayview
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
-import android.support.v4.util.ArraySet
 import android.support.v4.view.GestureDetectorCompat
 import android.support.v4.view.ViewCompat
 import android.support.v4.view.animation.FastOutLinearInInterpolator
 import android.text.*
 import android.text.format.DateUtils
 import android.util.AttributeSet
+import android.util.SparseArray
+import android.util.SparseIntArray
 import android.view.*
 import android.widget.OverScroller
 import android.widget.Toast
@@ -23,7 +24,7 @@ import com.ominext.demowm.R
 import com.ominext.demowm.util.TimeUtils
 import com.ominext.demowm.util.ViewUtils
 import com.ominext.demowm.util.isTheSameDay
-import com.ominext.demowm.util.isTheSameHour
+import org.joda.time.LocalDate
 import java.util.*
 
 class DayView : View {
@@ -251,9 +252,7 @@ class DayView : View {
     private var mHasAllDayEvents: Boolean = false
 
     private var BUFFER_HOUR = 24
-    private var mPositionFilled: Array<MutableSet<Int>> = Array(BUFFER_HOUR + mNumberOfVisibleDays * 2, { ArraySet<Int>() })
-    private var mAllDayEventNumArray: IntArray = IntArray(BUFFER_HOUR + mNumberOfVisibleDays * 2)
-    private var mOriginalAllDayEvent: BooleanArray = BooleanArray(BUFFER_HOUR + mNumberOfVisibleDays * 2)
+    private var mapTitle: MutableMap<Long?, Boolean>? = null
 
     //endregion
 
@@ -710,15 +709,15 @@ class DayView : View {
         canvas.clipRect(clipLeft, mHeaderHeight, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
 
         startPixel = if (mHasAllDayEvents) {
-            startFromPixel - BUFFER_HOUR * mWidthPerHour + mWidthPerHour
+            startFromPixel + mWidthPerHour
         } else {
-            startFromPixel - BUFFER_HOUR * mWidthPerHour
+            startFromPixel
         }
-        leftHoursWithGaps -= BUFFER_HOUR
         run {
             var hourNumber = leftHoursWithGaps + 1
             var i = 0
-            while (hourNumber <= leftHoursWithGaps + BUFFER_HOUR + mNumberOfVisibleDays * 2 && i < mPositionFilled.size) {
+            mapTitle = mutableMapOf()
+            while (hourNumber <= leftHoursWithGaps + mNumberOfVisibleDays + 1) {
                 day = today.clone() as Calendar
                 day.add(Calendar.HOUR_OF_DAY, hourNumber - 1)
                 mMapEventRects
@@ -772,15 +771,29 @@ class DayView : View {
             val event = mEventRects[i].event
             val eventOriginal = mEventRects[i].originalEvent
 
-            val isTheSameHour = day.isTheSameHour(event.mStartTime!!)
+            val startTmp = event.mStartTime!!.clone() as Calendar
+            startTmp.apply {
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val isTheSameHour = (day.timeInMillis - startTmp.timeInMillis) >= 0 && day.timeInMillis - event.mEndTime!!.timeInMillis <= 0
+
+            val offset = day - startTmp
 
             if (event.mAllDay || !isTheSameHour) continue
+
 
             val top = startTop + mEventRects[i].top * mHourHeight
             val hoursBetween = event.hoursBetween
             val bottom = top + mEventRects[i].height * mHourHeight - mEventSpace
+
+            val distance = mWidthPerHour * (hoursBetween - offset)
             val left = startFromPixel + event.minuteStart * mWidthPerHour / 60
-            val right = left + mWidthPerHour * hoursBetween - mEventSpace
+
+            val right = left + if (distance > mWidthPerHour) mWidthPerHour else {
+                distance - mEventSpace
+            }
             mEventRects[i].rectF = null
 
             if (left > right || startTop > height || bottom <= 0) continue
@@ -794,8 +807,12 @@ class DayView : View {
             if (eventOriginal.mEndTime!!.timeInMillis < System.currentTimeMillis()) {
                 mPaintEventBackground.alpha = DAY_PAST_ALPHA
             }
-            canvas.drawRoundRect(mEventRects[i].rectF, mEventCornerRadius.toFloat(), mEventCornerRadius.toFloat(), mPaintEventBackground)
-            drawEventTitle(mEventRects[i], canvas, top, left)
+            canvas.drawRoundRect(mEventRects[i].rectF, 0F, 0F, mPaintEventBackground)
+
+            if (mapTitle!![event.mId] != true) {
+                drawEventTitle(mEventRects[i], canvas, top, left)
+                mapTitle!![event.mId] = true
+            }
         }
     }
 
@@ -1056,10 +1073,7 @@ class DayView : View {
     private fun cacheEvent(index: Int, event: WeekViewEvent) {
         if (!event.mAllDay && event.mStartTime!! > event.mEndTime!!)
             return
-
-        event.splitEvents()
-                .map { EventRect(it, event, null) }
-                .forEach { mMapEventRects[index].add(it) }
+        mMapEventRects[index].add(EventRect(event, event, null))
     }
 
 
@@ -1344,4 +1358,9 @@ class DayView : View {
          */
         fun onViewCreated()
     }
+}
+
+private operator fun Calendar.minus(other: Calendar): Float {
+    val offset = this.timeInMillis - other.timeInMillis
+    return offset / (1000 * 60 * 60F)
 }
