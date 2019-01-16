@@ -11,8 +11,6 @@ import android.support.v4.view.animation.FastOutLinearInInterpolator
 import android.text.*
 import android.text.format.DateUtils
 import android.util.AttributeSet
-import android.util.SparseArray
-import android.util.SparseIntArray
 import android.view.*
 import android.widget.OverScroller
 import android.widget.Toast
@@ -24,8 +22,8 @@ import com.ominext.demowm.R
 import com.ominext.demowm.util.TimeUtils
 import com.ominext.demowm.util.ViewUtils
 import com.ominext.demowm.util.isTheSameDay
-import org.joda.time.LocalDate
 import java.util.*
+import kotlin.collections.ArrayList
 
 class DayView : View {
 
@@ -650,10 +648,12 @@ class DayView : View {
                     mPaintLine.color = mColorLine
                     mPaintLine.strokeWidth = DEFAULT_STROKE_WIDTH
                 } else {
-                    dashPath.moveTo(start, mHeaderHeight)
-                    dashPath.lineTo(start, height.toFloat())
-                    canvas.drawPath(dashPath, mPaintLine)
-                    dashPath.reset()
+                    if(startPixel != startFromPixel){
+                        dashPath.moveTo(start, mHeaderHeight)
+                        dashPath.lineTo(start, height.toFloat())
+                        canvas.drawPath(dashPath, mPaintLine)
+                        dashPath.reset()
+                    }
                 }
             }
 
@@ -725,7 +725,7 @@ class DayView : View {
                         .forEachIndexed { index, mEventRects ->
                             val startTop = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * index).toFloat()
                             if (startTop.inScreenVertical())
-                                drawEvents(mEventRects, day, startPixel, canvas, startTop)
+                                drawEvents(mEventRects, day, startPixel, canvas, startTop, i)
                         }
                 startPixel += mWidthPerHour
                 hourNumber++
@@ -765,11 +765,46 @@ class DayView : View {
         }
     }
 
-    private fun drawEvents(mEventRects: List<EventRect>, day: Calendar, startFromPixel: Float, canvas: Canvas, startTop: Float) {
+    private fun drawEvents(mEventRects: List<EventRect>, day: Calendar, startFromPixel: Float, canvas: Canvas, startTop: Float, step: Int) {
+        var xxx = mEventRects
+                .filter { eventR ->
+                    val startTmp = eventR.event.mStartTime!!.clone() as Calendar
+                    startTmp.apply {
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    (day.timeInMillis - startTmp.timeInMillis) >= 0 && day.timeInMillis - eventR.event.mEndTime!!.timeInMillis <= 0
+                }
 
-        for (i in mEventRects.indices) {
-            val event = mEventRects[i].event
-            val eventOriginal = mEventRects[i].originalEvent
+        val tempEvents = xxx.toMutableList()
+        xxx = mutableListOf()
+
+        while (tempEvents.isNotEmpty()) {
+            val eventRects = ArrayList<EventRect>(tempEvents.size)
+
+            // Get first event for a day.
+            val eventRect1 = tempEvents.removeAt(0)
+            eventRects.add(eventRect1)
+
+            var i = 0
+            while (i < tempEvents.size) {
+                // Collect all other events for same day.
+                val eventRect2 = tempEvents[i]
+                if (eventRect1.event.mStartTime!!.isTheSameDay(eventRect2.event.mStartTime!!)) {
+                    tempEvents.removeAt(i)
+                    eventRects.add(eventRect2)
+                } else {
+                    i++
+                }
+            }
+            computePositionOfEvents(eventRects, xxx)
+        }
+
+
+        for (i in xxx.indices) {
+            val event = xxx[i].event
+            val eventOriginal = xxx[i].originalEvent
 
             val startTmp = event.mStartTime!!.clone() as Calendar
             startTmp.apply {
@@ -779,38 +814,36 @@ class DayView : View {
             }
             val isTheSameHour = (day.timeInMillis - startTmp.timeInMillis) >= 0 && day.timeInMillis - event.mEndTime!!.timeInMillis <= 0
 
-            val offset = day - startTmp
-
             if (event.mAllDay || !isTheSameHour) continue
 
-
-            val top = startTop + mEventRects[i].top * mHourHeight
-            val hoursBetween = event.hoursBetween
-            val bottom = top + mEventRects[i].height * mHourHeight - mEventSpace
-
-            val distance = mWidthPerHour * (hoursBetween - offset)
-            val left = startFromPixel + event.minuteStart * mWidthPerHour / 60
-
-            val right = left + if (distance > mWidthPerHour) mWidthPerHour else {
-                distance - mEventSpace
-            }
-            mEventRects[i].rectF = null
-
-            if (left > right || startTop > height || bottom <= 0) continue
-            if (right < mHeaderColumnWidth - mWidthPerHour) continue
-            if (left > width + mWidthPerHour) continue
-
-            mEventRects[i].rectF = RectF(left, top, right, bottom)
-
-            mPaintEventBackground.alpha = NORMAL_ALPHA
-            mPaintEventBackground.color = event.mColor
-            if (eventOriginal.mEndTime!!.timeInMillis < System.currentTimeMillis()) {
-                mPaintEventBackground.alpha = DAY_PAST_ALPHA
-            }
-            canvas.drawRoundRect(mEventRects[i].rectF, 0F, 0F, mPaintEventBackground)
+            val offset = day - startTmp
 
             if (mapTitle!![event.mId] != true) {
-                drawEventTitle(mEventRects[i], canvas, top, left)
+                val top = startTop + xxx[i].top * mHourHeight
+                val hoursBetween = event.hoursBetween
+                val bottom = top + xxx[i].height * mHourHeight - mEventSpace
+
+                val distance = mWidthPerHour * (hoursBetween - offset)
+                val left = startFromPixel + event.minuteStart * mWidthPerHour / 60
+
+                val right = left + if (distance > width - mHeaderColumnWidth + mWidthPerHour) width.toFloat() - mHeaderColumnWidth + mWidthPerHour else distance - mEventSpace
+
+                xxx[i].rectF = null
+
+                if (left > right || startTop > height || bottom <= 0) continue
+                if (right < mHeaderColumnWidth - mWidthPerHour) continue
+                if (left > width + mWidthPerHour) continue
+
+                xxx[i].rectF = RectF(left, top, right, bottom)
+
+                mPaintEventBackground.alpha = NORMAL_ALPHA
+                mPaintEventBackground.color = event.mColor
+                if (eventOriginal.mEndTime!!.timeInMillis < System.currentTimeMillis()) {
+                    mPaintEventBackground.alpha = DAY_PAST_ALPHA
+                }
+                canvas.drawRoundRect(xxx[i].rectF, mEventCornerRadius.toFloat(), mEventCornerRadius.toFloat(), mPaintEventBackground)
+
+                drawEventTitle(xxx[i], canvas, top, left)
                 mapTitle!![event.mId] = true
             }
         }
@@ -881,40 +914,40 @@ class DayView : View {
             }
         }
 
-        // Prepare to calculate positions of each events.
-        val tempEvents = mMapEventRects
-        mMapEventRects = mutableListOf()
-        (0 until countMember)
-                .forEach {
-                    mMapEventRects.add(mutableListOf())
-                }
-
-        // Iterate through each day with events to calculate the position of the events.
-        tempEvents.forEachIndexed { index, it ->
-            while (it.size > 0) {
-                val eventRects = ArrayList<EventRect>(it.size)
-
-                // Get first event for a day.
-                val eventRect1 = it.removeAt(0)
-                eventRects.add(eventRect1)
-
-                var i = 0
-                while (i < it.size) {
-                    // Collect all other events for same day.
-                    val eventRect2 = it[i]
-                    if (eventRect1.event.mStartTime!!.isTheSameDay(eventRect2.event.mStartTime!!)) {
-                        it.removeAt(i)
-                        eventRects.add(eventRect2)
-                    } else {
-                        i++
-                    }
-                }
-                computePositionOfEvents(index, eventRects)
-            }
-        }
+//        // Prepare to calculate positions of each events.
+//        val tempEvents = mMapEventRects
+//        mMapEventRects = mutableListOf()
+//        (0 until countMember)
+//                .forEach {
+//                    mMapEventRects.add(mutableListOf())
+//                }
+//
+//        // Iterate through each day with events to calculate the position of the events.
+//        tempEvents.forEachIndexed { index, it ->
+//            while (it.size > 0) {
+//                val eventRects = ArrayList<EventRect>(it.size)
+//
+//                // Get first event for a day.
+//                val eventRect1 = it.removeAt(0)
+//                eventRects.add(eventRect1)
+//
+//                var i = 0
+//                while (i < it.size) {
+//                    // Collect all other events for same day.
+//                    val eventRect2 = it[i]
+//                    if (eventRect1.event.mStartTime!!.isTheSameDay(eventRect2.event.mStartTime!!)) {
+//                        it.removeAt(i)
+//                        eventRects.add(eventRect2)
+//                    } else {
+//                        i++
+//                    }
+//                }
+//                computePositionOfEvents(index, eventRects)
+//            }
+//        }
     }
 
-    private fun computePositionOfEvents(index: Int, eventRects: List<EventRect>) {
+    private fun computePositionOfEvents(eventRects: List<EventRect>, dest: MutableList<EventRect>) {
         // Make "collision groups" for all events that collide with others.
         val collisionGroups = ArrayList<ArrayList<EventRect>>()
         for (eventRect in eventRects) {
@@ -938,11 +971,11 @@ class DayView : View {
         }
 
         for (collisionGroup in collisionGroups) {
-            expandEventsToMaxWidth(index, collisionGroup)
+            expandEventsToMaxWidth(collisionGroup, dest)
         }
     }
 
-    private fun expandEventsToMaxWidth(index: Int, collisionGroup: List<EventRect>) {
+    private fun expandEventsToMaxWidth(collisionGroup: List<EventRect>, dest: MutableList<EventRect>) {
         // Expand the events to maximum possible width.
         val columns = ArrayList<ArrayList<EventRect>>()
         columns.add(ArrayList())
@@ -989,7 +1022,7 @@ class DayView : View {
                         eventRect.left = 0f
                         eventRect.right = 0F
                     }
-                    mMapEventRects[index].add(eventRect)
+                    dest.add(eventRect)
                 }
                 j++
             }
