@@ -215,6 +215,14 @@ class DayView : View {
         }
     }
 
+    private val mPaintSelected: Paint by lazy {
+        return@lazy Paint().apply {
+            this.color = Color.rgb(174, 208, 238)
+            this.style = Paint.Style.STROKE
+            this.strokeWidth = 1F.dp2Px()
+        }
+    }
+
     //TextEvent
     var mTextSizeEvent = 9F.dp2Px()
     var mTextColorEvent = Color.BLACK
@@ -648,7 +656,7 @@ class DayView : View {
                     mPaintLine.color = mColorLine
                     mPaintLine.strokeWidth = DEFAULT_STROKE_WIDTH
                 } else {
-                    if(startPixel != startFromPixel){
+                    if (startPixel != startFromPixel) {
                         dashPath.moveTo(start, mHeaderHeight)
                         dashPath.lineTo(start, height.toFloat())
                         canvas.drawPath(dashPath, mPaintLine)
@@ -733,6 +741,22 @@ class DayView : View {
             }
         }
         //endregion
+
+        startPixel = if (mHasAllDayEvents) {
+            startFromPixel + mWidthPerHour
+        } else {
+            startFromPixel
+        }
+
+        val rectXXX = RectF().apply {
+            top = mHeaderHeight + mCurrentOrigin.y + (mHourHeight * 1).toFloat()
+            bottom = top + mHourHeight
+            left = startPixel + mWidthPerHour
+            right = left + mWidthPerHour
+        }
+
+        canvas.drawRoundRect(rectXXX, mEventCornerRadius.toFloat(), mEventCornerRadius.toFloat(), mPaintSelected)
+
     }
 
     private fun getMaxOverScrollVertical() = mHourHeight * countStaff
