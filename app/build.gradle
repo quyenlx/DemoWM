@@ -41,7 +41,7 @@ dependencies {
 
     compile 'net.danlew:android.joda:2.9.9'
 
-    compile ('org.scala-saddle:google-rfc-2445:20110304'){
+    compile('org.scala-saddle:google-rfc-2445:20110304') {
         exclude module: 'joda-time'
         exclude module: 'scala-library'
     }
