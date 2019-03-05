@@ -1239,12 +1239,15 @@ class DayView : View {
     }
 
     val mPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+
+    val imageQrCode = ViewUtils.getBitmapFromXml(context, R.drawable.ic_qr_code_2)
     @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        canvas.drawColor(Color.parseColor("#ffffff"))
-        drawHeaderRowAndEvents(canvas)
-        drawStaffColumnAndAxes(canvas)
+//        canvas.drawColor(Color.parseColor("#ffffff"))
+//        drawHeaderRowAndEvents(canvas)
+//        drawStaffColumnAndAxes(canvas)
 
 
 //        mPaint.isAntiAlias = true
@@ -1258,6 +1261,20 @@ class DayView : View {
 //
 //        mPaint.color = Color.BLUE;
 //        canvas.drawRect((width - rectWidth) / 2.0f, 0.0f, ((width - rectWidth) / 2.0f) + rectWidth, rectWidth, mPaint)
+//
+//
+//        canvas.clipRect(rect, Region.Op.DIFFERENCE)
+//        canvas.drawColor(Color.CYAN)
+
+        val leftI = (width - imageQrCode!!.width) / 2F
+        val topI = (height - imageQrCode.height) / 2F
+        val rect = RectF(leftI, topI, leftI + imageQrCode.width.toFloat(), topI + imageQrCode.height.toFloat())
+        canvas.clipRect(rect, Region.Op.DIFFERENCE)
+        canvas.drawColor(Color.CYAN)
+
+        canvas.clipRect(0F, 0F, width.toFloat(), height.toFloat(), Region.Op.REPLACE)
+        canvas.drawBitmap(imageQrCode, leftI, topI, mPaintAvatar)
+
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -1289,7 +1306,7 @@ class DayView : View {
 
         if (mScroller!!.isFinished) {
             if (mCurrentFlingDirection != Direction.NONE) {
-                // Snap to day after fling is finished.
+                // Snap to day after fling is  finished.
                 goToNearestOrigin()
             }
         } else {
