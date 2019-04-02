@@ -12,6 +12,9 @@ import retrofit.Callback
 import retrofit.RetrofitError
 import retrofit.client.Response
 import java.util.*
+import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
+import android.content.Intent
+
 
 class CustomViewActivity : AppCompatActivity(), MonthLoader.MonthChangeListener, Callback<MutableList<Event>> {
     private val events = ArrayList<WeekViewEvent>()
@@ -24,8 +27,10 @@ class CustomViewActivity : AppCompatActivity(), MonthLoader.MonthChangeListener,
         weekView.mWeekViewLoader = MonthLoader(this)
 
         btnToDay.setOnClickListener {
+            val intent = Intent(this, OssLicensesMenuActivity::class.java)
+            startActivity(intent)
+//            weekView.goToDate(Calendar.getInstance())
 
-            weekView.goToDate(Calendar.getInstance())
         }
     }
 

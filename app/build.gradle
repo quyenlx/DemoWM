@@ -1,5 +1,7 @@
 apply plugin: 'com.android.application'
 
+apply plugin: 'com.google.android.gms.oss-licenses-plugin'
+
 apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
@@ -46,4 +48,6 @@ dependencies {
         exclude module: 'scala-library'
     }
     compile 'com.squareup.retrofit:retrofit:1.9.0'
+
+    implementation 'com.google.android.gms:play-services-oss-licenses:15.0.1'
 }
